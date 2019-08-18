@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <VBox prefHeight="400.0" prefWidth="608.0">
+            <children>
+                <LineChart fx:id="chart" animated="false" createSymbols="false">
+                    <xAxis>
+                        <CategoryAxis animated="false" side="BOTTOM" />
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis animated="false" forceZeroInRange="false" side="LEFT" />
+                    </yAxis>
+                </LineChart>
+                <ToggleButton fx:id="toggleButton" mnemonicParsing="false" text="ToggleButton" />
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>
