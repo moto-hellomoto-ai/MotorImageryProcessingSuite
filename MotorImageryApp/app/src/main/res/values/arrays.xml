@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="task_names">
+        <item>@string/task_rotary_name</item>
+    </string-array>
+
+    <string-array name="task_descriptions">
+        <item>@string/task_rotary_description</item>
+    </string-array>
+</resources>
