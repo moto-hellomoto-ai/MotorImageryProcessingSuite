@@ -26,7 +26,8 @@
         </activity>
         <activity
             android:name=".tasks.TaskActivity"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".MainActivity"
+            android:keepScreenOn="true"/>
         <activity
             android:name=".PreferenceActivity"
             android:parentActivityName=".MainActivity">

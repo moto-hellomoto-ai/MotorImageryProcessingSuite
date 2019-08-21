@@ -8,6 +8,7 @@ class RotationHandler(private val view: View) {
     private val centerX: Float
     private val centerY: Float
     private var coord0: Pair<Float, Float> = Pair(0f, 0f)
+    private val width = kotlin.math.min(view.width, view.height)
 
     init {
         val loc: IntArray = intArrayOf(0, 0)
@@ -28,8 +29,8 @@ class RotationHandler(private val view: View) {
     }
 
     private fun getRelativeCoord(event: MotionEvent): Pair<Float, Float> {
-        val x = 2f * (event.rawX - centerX) / view.width
-        val y = 2f * (event.rawY - centerY) / view.height
+        val x = 2f * (event.rawX - centerX) / width
+        val y = 2f * (event.rawY - centerY) / width
         /*
         Log.d("", "(%f, %f) <- ((%f - %f) / %d, (%f - %f) / %d)".format(
             x, y, event.rawX, centerX, view.width, event.rawY, centerY, view.height))

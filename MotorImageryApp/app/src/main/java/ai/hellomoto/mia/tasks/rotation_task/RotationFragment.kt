@@ -126,7 +126,7 @@ class RotationFragment : Fragment() {
                 Log.e("MIA", "exception", e)
                 mStream = false
                 mClient = null
-                showToast("Socket Error. Stream stopped.")
+                showToast("Network Error. Stream stopped.")
             }
         }
     }
@@ -143,10 +143,11 @@ class RotationFragment : Fragment() {
             doAsync {
                 try {
                     mClient = TCPClient(mAddress, mPort)
+                    showToast("Streaming started: $mAddress:$mPort.")
                 } catch (e: Exception) {
                     Log.e("MIA", "exception", e)
                     mStream = false
-                    showToast("Socket Error. Stream stopped.")
+                    showToast("Network Error. Stream stopped.")
                 }
             }
         }
