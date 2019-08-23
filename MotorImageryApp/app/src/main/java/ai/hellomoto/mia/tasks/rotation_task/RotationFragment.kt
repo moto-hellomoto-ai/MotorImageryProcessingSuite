@@ -1,7 +1,6 @@
 package ai.hellomoto.mia.tasks.rotation_task
 
 import ai.hellomoto.mia.R
-import ai.hellomoto.mia.tasks.TCPClient
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,6 +14,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.preference.PreferenceManager
+import io.grpc.Status
 import org.jetbrains.anko.doAsync
 import kotlin.math.abs
 
@@ -24,7 +24,7 @@ class RotationFragment : Fragment() {
     private var mVelocityDecay: Float = 0.95f
 
     private var mStream: Boolean = false
-    private var mClient: TCPClient? = null
+    private var mClient: Streamer? = null
     private var mAddress: String = ""
     private var mPort: Int = 0
 
@@ -121,7 +121,7 @@ class RotationFragment : Fragment() {
         }
         if (mStream) {
             try {
-                mClient?.sendMessage("%f".format(mVelocity))
+                mClient?.send(mVelocity)
             } catch (e: Exception) {
                 Log.e("MIA", "exception", e)
                 mStream = false
@@ -142,7 +142,10 @@ class RotationFragment : Fragment() {
         if (mStream) {
             doAsync {
                 try {
-                    mClient = TCPClient(mAddress, mPort)
+                    mClient = Streamer(mAddress, mPort){error ->
+                        println("Failed: ${Status.fromThrowable(error)}")
+                        showToast("Network Error. Stream stopped.")
+                    }
                     showToast("Streaming started: $mAddress:$mPort.")
                 } catch (e: Exception) {
                     Log.e("MIA", "exception", e)
@@ -156,7 +159,7 @@ class RotationFragment : Fragment() {
 
     private fun stopUIUpdater() {
         this.mUIUpdater.stop()
-        this.mClient?.close()
+        this.mClient?.shutdown()
         this.mClient = null
     }
 }

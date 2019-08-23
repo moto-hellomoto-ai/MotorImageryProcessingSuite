@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+option java_multiple_files = false;
+option java_package = "ai.hellomoto.mip.tasks.rotation_task";
+option java_outer_classname = "RotationStreamProcessorService";
+
+package ai.hellomoto.mip.task;
+
+service RotationStreamProcessor {
+    rpc stream (stream RotationData) returns (ProcessResult);
+}
+
+message RotationData {
+    float velocity = 1;
+}
+
+message ProcessResult {
+}
