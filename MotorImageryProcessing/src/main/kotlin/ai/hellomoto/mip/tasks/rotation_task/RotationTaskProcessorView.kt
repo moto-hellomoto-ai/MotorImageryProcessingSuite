@@ -1,5 +1,6 @@
-package ai.hellomoto.mip
+package ai.hellomoto.mip.tasks.rotation_task
 
+import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorService.RotationData
 import javafx.application.Platform
 import javafx.collections.ObservableList
 import javafx.scene.chart.LineChart
@@ -11,19 +12,18 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 
-class Handler(private val data: ObservableList<XYChart.Data<String, Float>>) {
+class Handler(private val series_data: ObservableList<XYChart.Data<String, Float>>) {
     private val dateFormat = SimpleDateFormat("HH:mm:ss:SSSS")
     private var lastUpdate:Long = 0
 
-    fun handleMessage(line:String) {
-        val y:Float = try {line.toFloat()} catch (e: Exception) {return}
+    fun handleMessage(data:RotationData) {
         val t = dateFormat.format(Date())
         val now = System.currentTimeMillis()
         if (now - lastUpdate > 60) {
             Platform.runLater {
-                data.add(XYChart.Data(t, y))
-                if (data.size > 300) {
-                    data.removeAt(0)
+                series_data.add(XYChart.Data(t, data.velocity))
+                if (series_data.size > 300) {
+                    series_data.removeAt(0)
                 }
             }
             lastUpdate = now
@@ -31,8 +31,7 @@ class Handler(private val data: ObservableList<XYChart.Data<String, Float>>) {
     }
 }
 
-
-class MotorImageryProcessingView: View() {
+class RotationTaskProcessorView: View() {
 
     override val root: AnchorPane by fxml()
     private val port: Int = 59898
@@ -42,7 +41,7 @@ class MotorImageryProcessingView: View() {
     private var data: ObservableList<XYChart.Data<String, Float>>
 
     private val toggleButton: ToggleButton by fxid("toggleButton")
-    private var bgServer: Server? = null
+    private var bgServer: io.grpc.Server? = null
 
     init {
         series = chart.series("Plot") {}
@@ -55,11 +54,11 @@ class MotorImageryProcessingView: View() {
         if (toggleButton.isSelected) {
             data.clear()
             val handler = Handler(data)
-            bgServer = getServer(port) {line -> handler.handleMessage(line)}
+            bgServer = getServer(port=port) {data -> handler.handleMessage(data)}
             bgServer?.start()
             toggleButton.text = "ON"
         } else {
-            bgServer?.stop()
+            bgServer?.shutdownNow()
             bgServer = null
             toggleButton.text = "OFF"
         }
