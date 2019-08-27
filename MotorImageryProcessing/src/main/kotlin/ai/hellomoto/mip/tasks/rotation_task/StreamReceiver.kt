@@ -23,7 +23,7 @@ class RotationStreamProcessorGrpcImpl(
     ):StreamObserver<RotationData>
     {
         return object : StreamObserver<RotationData> {
-            private var counter = 0u
+            private var counter = 0
             private val startTime = System.nanoTime()
             override fun onNext(data: RotationData) {
                 counter++
