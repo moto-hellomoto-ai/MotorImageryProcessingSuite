@@ -1,7 +1,9 @@
 package ai.hellomoto.mip
 
-import tornadofx.launch
+import tornadofx.*
+
+class Main: App(MainView::class)
 
 fun main(args: Array<String>) {
-    launch<MotorImageryProcessingApp>(args)
+    launch<Main>(args)
 }

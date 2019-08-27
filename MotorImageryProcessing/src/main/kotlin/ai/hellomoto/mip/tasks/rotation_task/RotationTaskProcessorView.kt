@@ -1,10 +1,12 @@
 package ai.hellomoto.mip.tasks.rotation_task
 
+import ai.hellomoto.mip.MainView
 import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorService.RotationData
 import javafx.application.Platform
 import javafx.collections.ObservableList
 import javafx.scene.chart.LineChart
 import javafx.scene.chart.XYChart
+import javafx.scene.control.MenuItem
 import javafx.scene.control.ToggleButton
 import javafx.scene.layout.AnchorPane
 import tornadofx.*
@@ -34,6 +36,8 @@ class Handler(private val series_data: ObservableList<XYChart.Data<String, Float
 class RotationTaskProcessorView: View() {
 
     override val root: AnchorPane by fxml()
+    private val quit: MenuItem by fxid("quit")
+
     private val port: Int = 59898
 
     private val chart: LineChart<String, Float> by fxid("chart")
@@ -44,6 +48,8 @@ class RotationTaskProcessorView: View() {
     private var bgServer: io.grpc.Server? = null
 
     init {
+        quit.action { replaceWith<MainView>() }
+
         series = chart.series("Plot") {}
         data = series.data
 
