@@ -12,6 +12,7 @@ buildscript {
     dependencies {
         classpath "com.google.protobuf:protobuf-gradle-plugin:$protobuf_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'org.openjfx:javafx-plugin:0.0.8'
     }
 }
 
@@ -20,7 +21,7 @@ plugins {
     id 'idea'
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.0.8'
-    id 'org.jetbrains.kotlin.jvm' version '1.3.41'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.50'
     id 'com.google.protobuf' version '0.8.10'
 }
 
@@ -33,7 +34,7 @@ repositories {
 }
 
 dependencies {
-    compile 'no.tornado:tornadofx:1.7.15'
+    compile 'no.tornado:tornadofx:1.7.19'
     compile "io.grpc:grpc-all:$grpc_version"
     compile 'javax.annotation:javax.annotation-api:1.3.2'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.1.0"
@@ -79,3 +80,5 @@ idea {
         sourceDirs += file("src/generated/main/grpc")
     }
 }
+
+mainClassName = 'ai.hellomoto.mip.MainKt'
