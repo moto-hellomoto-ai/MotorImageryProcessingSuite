@@ -1,5 +1,6 @@
 package ai.hellomoto.mip
 
+import ai.hellomoto.mip.settings.board_config.BoardConfigFragment
 import ai.hellomoto.mip.tasks.rotation_task.RotationTaskProcessorView
 import javafx.scene.control.*
 import javafx.scene.layout.AnchorPane
@@ -8,10 +9,12 @@ import tornadofx.*
 class MainView : View() {
     override val root: AnchorPane by fxml()
     private val menuBar:MenuBar by fxid("menuBar")
-    private val mRotationTaskRecord:MenuItem by fxid("rotationTaskRecord")
+    private val mSettingsBoard:MenuItem by fxid("mSettingsBoard")
+    private val mTasksRotationRecord:MenuItem by fxid("mTasksRotationRecord")
 
     init {
         menuBar.prefWidthProperty().bind(root.widthProperty())
-        mRotationTaskRecord.action { replaceWith<RotationTaskProcessorView>() }
+        mTasksRotationRecord.action { replaceWith<RotationTaskProcessorView>() }
+        mSettingsBoard.action { find<BoardConfigFragment>().openModal() }
     }
 }

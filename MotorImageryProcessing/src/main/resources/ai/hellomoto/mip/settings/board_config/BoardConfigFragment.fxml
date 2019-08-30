@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <ToolBar fx:id="toolbar" prefHeight="40.0" prefWidth="600.0">
+        <items>
+            <ComboBox fx:id="portSelector" prefWidth="150.0" promptText="Serial Port" />
+            <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" />
+        </items>
+      </ToolBar>
+      <AnchorPane fx:id="configPane" layoutY="40.0" prefHeight="560.0" prefWidth="600.0">
+         <children>
+            <ComboBox fx:id="sampleRateSelector" layoutX="8.0" layoutY="147.0" prefWidth="150.0" promptText="Sample Rate" />
+            <TextArea fx:id="firmwareMessage" layoutX="8.0" layoutY="8.0" prefHeight="125.0" prefWidth="584.0">
+               <font>
+                  <Font name="Comic Sans MS" size="13.0" />
+               </font>
+            </TextArea>
+         </children>
+      </AnchorPane>
+   </children>
+</AnchorPane>

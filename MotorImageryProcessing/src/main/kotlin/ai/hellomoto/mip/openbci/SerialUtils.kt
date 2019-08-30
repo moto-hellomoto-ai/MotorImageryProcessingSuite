@@ -3,6 +3,7 @@ package ai.hellomoto.mip.openbci
 import com.fazecast.jSerialComm.SerialPort
 import java.nio.charset.Charset
 import java.util.logging.Logger
+import kotlin.system.measureTimeMillis
 
 private const val DOLLAR_SIGN = '$'.toByte()
 
@@ -28,6 +29,8 @@ interface ISerialWrapper {
     fun sendCommand(cmd:Command)
 
     fun readMessage(): String
+
+    fun close()
 }
 
 class SerialWrapper(port:String, baudRate:Int) : ISerialWrapper {
@@ -37,7 +40,7 @@ class SerialWrapper(port:String, baudRate:Int) : ISerialWrapper {
     init {
         serial.setComPortTimeouts(SerialPort.TIMEOUT_READ_SEMI_BLOCKING, 3000, 0)
         serial.baudRate = baudRate
-        serial.openPort(2000)
+        serial.openPort(3000)
     }
 
     override fun sendCommand(cmd: ByteArray, length: Long) {
@@ -52,6 +55,7 @@ class SerialWrapper(port:String, baudRate:Int) : ISerialWrapper {
 
     override fun readMessage(): String {
         var numRead:Long = 0
+        val start = System.currentTimeMillis()
         do {
             val capacity = buffer.size.toLong() - numRead
             numRead += serial.readBytes(buffer, capacity, numRead)
@@ -62,7 +66,15 @@ class SerialWrapper(port:String, baudRate:Int) : ISerialWrapper {
                 }
                 return message
             }
+            val elapsed = System.currentTimeMillis() - start
+            if (elapsed > 3000) {
+                return ""
+            }
         } while (true)
+    }
+
+    override fun close() {
+        serial.closePort()
     }
 
     companion object {

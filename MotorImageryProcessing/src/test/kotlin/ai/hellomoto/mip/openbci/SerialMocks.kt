@@ -16,6 +16,7 @@ class SerialMocks{
         override fun sendCommand(cmd: ByteArray, length: Long) {
             throw RuntimeException("Test Serial Mock is used without initialization.")
         }
+        override fun close() {}
     }
 
     class SimpleResponsive (
@@ -40,6 +41,10 @@ class SerialMocks{
             val msg:String = message ?: throw AssertionError("No message is available.")
             message = null
             return msg
+        }
+        override fun close() {
+            command = null
+            message = null
         }
     }
 }

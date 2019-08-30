@@ -5,6 +5,8 @@ class Cyton(private val serial:ISerialWrapper)
 {
     constructor(port:String, baudRate:Int=115200): this(SerialWrapper(port, baudRate)) {}
 
+    fun close() { serial.close() }
+
     ////////////////////////////////////////////////////////////////////////////
     fun resetBoard(): String {
         serial.sendCommand(Command.RESET_BOARD)
