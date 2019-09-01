@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.text.*?>
 <?import java.lang.*?>
 <?import java.util.*?>
@@ -7,7 +8,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+<VBox prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <ToolBar fx:id="toolbar" prefHeight="40.0" prefWidth="600.0">
         <items>
@@ -15,15 +16,18 @@
             <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" />
         </items>
       </ToolBar>
-      <AnchorPane fx:id="configPane" layoutY="40.0" prefHeight="560.0" prefWidth="600.0">
+      <TextArea fx:id="infoText" editable="false" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="125.0">
+         <font>
+            <Font name="Comic Sans MS" size="13.0" />
+         </font>
+         <VBox.margin>
+            <Insets bottom="4.0" left="8.0" right="8.0" top="8.0" />
+         </VBox.margin>
+      </TextArea>
+      <AnchorPane fx:id="configPane" disable="true" prefHeight="560.0" prefWidth="600.0">
          <children>
-            <ComboBox fx:id="sampleRateSelector" layoutX="8.0" layoutY="147.0" prefWidth="150.0" promptText="Sample Rate" />
-            <TextArea fx:id="firmwareMessage" layoutX="8.0" layoutY="8.0" prefHeight="125.0" prefWidth="584.0">
-               <font>
-                  <Font name="Comic Sans MS" size="13.0" />
-               </font>
-            </TextArea>
+            <ComboBox fx:id="sampleRateSelector" prefWidth="150.0" promptText="Sample Rate" AnchorPane.leftAnchor="8.0" AnchorPane.topAnchor="4.0" />
          </children>
       </AnchorPane>
    </children>
-</AnchorPane>
+</VBox>

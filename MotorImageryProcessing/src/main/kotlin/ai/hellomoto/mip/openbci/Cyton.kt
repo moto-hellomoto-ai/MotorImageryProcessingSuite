@@ -1,22 +1,46 @@
 package ai.hellomoto.mip.openbci
 
+import java.util.logging.Logger
+
+
 sealed class OperationResult {
-    data class Success(val message:String): OperationResult() {}
-    data class Fail(val message:String):OperationResult() {}
-    data class Invalid(val messge:String):OperationResult() {}
-    object TimeOut : OperationResult()
+    abstract val message:String
+
+    data class Success(override val message:String): OperationResult() {}
+    data class Fail(override val message:String):OperationResult() {}
+    data class Invalid(override val message:String):OperationResult() {}
+    data class TimeOut(override val message:String="TimeOut occurred while reading a message.") : OperationResult() {
+        constructor(command:Command):this("TimeOut occurred while checking result from ${command}") {}
+    }
 }
 
 class Cyton(private val serial:ISerialWrapper)
 {
+    companion object {
+        val LOG:Logger = Logger.getLogger(this::class.java.name)
+    }
+
     constructor(port:String, baudRate:Int=115200): this(SerialWrapper(port, baudRate)) {}
 
     fun close() { serial.close() }
 
     ////////////////////////////////////////////////////////////////////////////
+    fun init():OperationResult {
+        var res:OperationResult?
+        LOG.info("* Resetting Board.")
+        res = resetBoard()
+        if (res !is OperationResult.Success) { return res }
+        val boardInfo = res.message
+        LOG.info("* Resseting Channels.")
+        res = resetChannels()
+        if (res !is OperationResult.Success) { return res }
+        return OperationResult.Success(message=boardInfo)
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
     fun readMessage():OperationResult {
         return when (val message = serial.readMessage()) {
-            null -> OperationResult.TimeOut
+            null -> OperationResult.TimeOut()
             else -> OperationResult.Success(message)
         }
     }
@@ -26,7 +50,7 @@ class Cyton(private val serial:ISerialWrapper)
         serial.sendCommand(Command.RESET_BOARD)
         val message = serial.readMessage()
         return when {
-            message == null -> OperationResult.TimeOut
+            message == null -> OperationResult.TimeOut(Command.RESET_BOARD)
             message.endsWith("$$$") -> OperationResult.Success(message)
             else -> OperationResult.Fail(message)
         }
@@ -71,7 +95,7 @@ class Cyton(private val serial:ISerialWrapper)
             serial.sendCommand(Command.ATTACH_WIFI)
             val message = serial.readMessage()
             when {
-                message == null -> OperationResult.TimeOut
+                message == null -> OperationResult.TimeOut(Command.ATTACH_WIFI)
                 message.contains("failure", ignoreCase = true) -> OperationResult.Fail(message)
                 else -> {
                     isWifiAttached = true
@@ -86,7 +110,7 @@ class Cyton(private val serial:ISerialWrapper)
             serial.sendCommand(Command.DETACH_WIFI)
             val message = serial.readMessage()
             when {
-                message == null -> OperationResult.TimeOut
+                message == null -> OperationResult.TimeOut(Command.DETACH_WIFI)
                 message.contains("failure", ignoreCase = true) -> OperationResult.Fail(message)
                 else -> {
                     isWifiAttached = false
@@ -194,7 +218,7 @@ class Cyton(private val serial:ISerialWrapper)
             serial.sendCommand(Command.ATTACH_DAISY)
             val message = serial.readMessage()
             when {
-                message == null -> OperationResult.TimeOut
+                message == null -> OperationResult.TimeOut(Command.ATTACH_DAISY)
                 message.contains("no daisy to attach!", ignoreCase = true) -> OperationResult.Fail(message)
                 else -> {
                     isDaisyAttached = true
@@ -209,7 +233,7 @@ class Cyton(private val serial:ISerialWrapper)
             serial.sendCommand(Command.DETACH_DAISY)
             val message = serial.readMessage()
             when (message) {
-                null -> OperationResult.TimeOut
+                null -> OperationResult.TimeOut(Command.DETACH_DAISY)
                 else -> {
                     isDaisyAttached = false
                     OperationResult.Success(message)
@@ -233,7 +257,7 @@ class Cyton(private val serial:ISerialWrapper)
         serial.sendCommand(Command.RESET_CHANNELS)
         val message = serial.readMessage()
         return when (message) {
-            null -> OperationResult.TimeOut
+            null -> OperationResult.TimeOut(Command.RESET_CHANNELS)
             // TODO: Add failure case
             else -> OperationResult.Success(message)
         }

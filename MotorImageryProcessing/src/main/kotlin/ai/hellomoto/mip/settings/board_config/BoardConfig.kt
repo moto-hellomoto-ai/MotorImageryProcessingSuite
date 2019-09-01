@@ -4,7 +4,7 @@ import ai.hellomoto.mip.openbci.SampleRate
 import com.fazecast.jSerialComm.SerialPort
 
 fun getPorts():List<String> {
-    return SerialPort.getCommPorts().map{ it.portDescription }
+    return SerialPort.getCommPorts().map{ it.systemPortName }
 }
 
 fun getSampleRates():List<String> {
