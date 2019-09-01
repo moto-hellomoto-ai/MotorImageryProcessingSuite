@@ -30,9 +30,7 @@ internal class TypeDefsTest {
         }
         @Test
         fun test_SampleRateFromMessage_failure() {
-            assertThrows(IllegalArgumentException::class.java) {
-                SampleRate.fromMessage("36Hz")
-            }
+            assertNull(SampleRate.fromMessage("36Hz"))
         }
     }
 
@@ -55,9 +53,7 @@ internal class TypeDefsTest {
         }
         @Test
         fun test_BoardModeFromMessage_failure() {
-            assertThrows(IllegalArgumentException::class.java) {
-                BoardMode.fromMessage("Success: unknown$$$")
-            }
+            assertNull(BoardMode.fromMessage("Success: unknown$$$"))
         }
     }
 }

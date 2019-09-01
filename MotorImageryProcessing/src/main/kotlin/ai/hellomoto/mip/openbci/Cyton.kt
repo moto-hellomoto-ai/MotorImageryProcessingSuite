@@ -1,5 +1,11 @@
 package ai.hellomoto.mip.openbci
 
+sealed class OperationResult {
+    data class Success(val message:String): OperationResult() {}
+    data class Fail(val message:String):OperationResult() {}
+    data class Invalid(val messge:String):OperationResult() {}
+    object TimeOut : OperationResult()
+}
 
 class Cyton(private val serial:ISerialWrapper)
 {
@@ -8,9 +14,22 @@ class Cyton(private val serial:ISerialWrapper)
     fun close() { serial.close() }
 
     ////////////////////////////////////////////////////////////////////////////
-    fun resetBoard(): String {
+    fun readMessage():OperationResult {
+        return when (val message = serial.readMessage()) {
+            null -> OperationResult.TimeOut
+            else -> OperationResult.Success(message)
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////
+    fun resetBoard(): OperationResult {
         serial.sendCommand(Command.RESET_BOARD)
-        return serial.readMessage()
+        val message = serial.readMessage()
+        return when {
+            message == null -> OperationResult.TimeOut
+            message.endsWith("$$$") -> OperationResult.Success(message)
+            else -> OperationResult.Fail(message)
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -23,9 +42,9 @@ class Cyton(private val serial:ISerialWrapper)
             requireNotNull(mode) { "Board Mode to set cannot be null." }
             field = setAndFetchBoardMode(mode.command)
         }
-    private fun setAndFetchBoardMode(cmd:Command):BoardMode {
+    private fun setAndFetchBoardMode(cmd:Command):BoardMode? {
         serial.sendCommand(cmd)
-        return BoardMode.fromMessage(serial.readMessage()) ?: throw RuntimeException("Failed to fetch Board Mode.")
+        return BoardMode.fromMessage(serial.readMessage())
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -38,38 +57,52 @@ class Cyton(private val serial:ISerialWrapper)
             requireNotNull(rate) {"Sample Rate to set cannot be null."}
             field = setAndFetchSampleRate(rate.command)
         }
-    private fun setAndFetchSampleRate(cmd:Command):SampleRate {
+    private fun setAndFetchSampleRate(cmd:Command):SampleRate? {
         serial.sendCommand(cmd)
-        return SampleRate.fromMessage(serial.readMessage()) ?: throw RuntimeException("Failed to fetch Sample Rate.")
+        return SampleRate.fromMessage(serial.readMessage())
     }
 
     ////////////////////////////////////////////////////////////////////////////
     var isWifiAttached:Boolean = false
         private set
-    fun attachWifi() {
-        if (isWifiAttached) { return }
-        serial.sendCommand(Command.ATTACH_WIFI)
-        if (serial.readMessage().contains("failure", ignoreCase = true)) {
-            throw RuntimeException("Failed to attach WiFi shield.")
+    fun attachWifi():OperationResult = when {
+        isWifiAttached -> OperationResult.Invalid("WiFi is attached.")
+        else -> {
+            serial.sendCommand(Command.ATTACH_WIFI)
+            val message = serial.readMessage()
+            when {
+                message == null -> OperationResult.TimeOut
+                message.contains("failure", ignoreCase = true) -> OperationResult.Fail(message)
+                else -> {
+                    isWifiAttached = true
+                    OperationResult.Success(message)
+                }
+            }
         }
-        isWifiAttached = true
     }
-    fun detachWifi() {
-        if (!isWifiAttached) { return }
-        serial.sendCommand(Command.DETACH_WIFI)
-        if (serial.readMessage().contains("failure", ignoreCase=true)) {
-            throw RuntimeException("Failed to detach WiFi shield.")
+    fun detachWifi():OperationResult = when {
+        !isWifiAttached -> OperationResult.Invalid("WiFi not attached.")
+        else -> {
+            serial.sendCommand(Command.DETACH_WIFI)
+            val message = serial.readMessage()
+            when {
+                message == null -> OperationResult.TimeOut
+                message.contains("failure", ignoreCase = true) -> OperationResult.Fail(message)
+                else -> {
+                    isWifiAttached = false
+                    OperationResult.Success(message)
+                }
+            }
         }
-        isWifiAttached = false
     }
-    var wifiStatus:String = ""
+    var wifiStatus:String? = ""
         get() {
             serial.sendCommand(Command.QUERY_WIFI_STATUS)
             return serial.readMessage()
         }
         private set
 
-    fun resetWifi():String {
+    fun resetWifi():String? {
         serial.sendCommand(Command.RESET_WIFI_STATUS)
         return serial.readMessage()
     }
@@ -147,7 +180,7 @@ class Cyton(private val serial:ISerialWrapper)
             return field
         }
         private set
-    private fun getFirmWareVersion(): String {
+    private fun getFirmWareVersion(): String? {
         serial.sendCommand(Command.QUERY_FIRMWARE_VERSION)
         return serial.readMessage()
     }
@@ -155,37 +188,55 @@ class Cyton(private val serial:ISerialWrapper)
     ////////////////////////////////////////////////////////////////////////////
     var isDaisyAttached:Boolean = false
         private set
-    fun attachDaisy():String {
-        serial.sendCommand(Command.ATTACH_DAISY)
-        val message = serial.readMessage()
-        if (message.contains("no daisy to attach!", ignoreCase = true)) {
-            throw RuntimeException("Failed to attach Daisy. \"${message}\"")
+    fun attachDaisy():OperationResult = when {
+        isDaisyAttached -> OperationResult.Invalid("Daisy is attached.")
+        else -> {
+            serial.sendCommand(Command.ATTACH_DAISY)
+            val message = serial.readMessage()
+            when {
+                message == null -> OperationResult.TimeOut
+                message.contains("no daisy to attach!", ignoreCase = true) -> OperationResult.Fail(message)
+                else -> {
+                    isDaisyAttached = true
+                    OperationResult.Success(message)
+                }
+            }
         }
-        isDaisyAttached = true
-        return message
     }
-    fun detachDaisy():String {
-        return if (!isDaisyAttached) "" else {
+    fun detachDaisy():OperationResult = when {
+        !isDaisyAttached -> OperationResult.Invalid("Daisy is not attached.")
+        else -> {
             serial.sendCommand(Command.DETACH_DAISY)
-            isDaisyAttached = false
-            serial.readMessage()
+            val message = serial.readMessage()
+            when (message) {
+                null -> OperationResult.TimeOut
+                else -> {
+                    isDaisyAttached = false
+                    OperationResult.Success(message)
+                }
+            }
         }
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    fun enableTimestamp():String {
+    fun enableTimestamp():String? {
         serial.sendCommand(Command.ENABLE_TIMESTAMP)
         return if (isStreaming) "" else serial.readMessage()
     }
-    fun disableTimestamp():String {
+    fun disableTimestamp():String? {
         serial.sendCommand(Command.DISABLE_TIMESTAMP)
         return if (isStreaming) "" else serial.readMessage()
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    fun resetChannels():String {
+    fun resetChannels():OperationResult {
         serial.sendCommand(Command.RESET_CHANNELS)
-        return serial.readMessage()
+        val message = serial.readMessage()
+        return when (message) {
+            null -> OperationResult.TimeOut
+            // TODO: Add failure case
+            else -> OperationResult.Success(message)
+        }
     }
 
     fun getDefaultSettings() {

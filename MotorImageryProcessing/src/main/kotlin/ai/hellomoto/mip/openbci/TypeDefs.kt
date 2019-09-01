@@ -2,8 +2,11 @@ package ai.hellomoto.mip.openbci
 
 private fun b(command:String):ByteArray = command.toByteArray()
 
-private fun findPattern(pattern:Regex, message:String):String? {
-    return pattern.find(message)?.groups?.get(1)?.value
+private fun findPattern(pattern:Regex, message:String?):String? {
+    return when (message) {
+        null -> null
+        else -> pattern.find(message)?.groups?.get(1)?.value
+    }
 }
 
 enum class Command(val value:ByteArray) {
@@ -80,13 +83,13 @@ enum class BoardMode(val command:Command) {
 
     companion object {
         private val pattern = """(default|debug|analog|digital|marker)""".toRegex()
-        internal fun fromMessage(message:String):BoardMode = when(val mode = findPattern(pattern, message)) {
+        internal fun fromMessage(message:String?):BoardMode? = when (findPattern(pattern, message)) {
             "default" -> DEFAULT
             "debug" -> DEBUG
             "analog" -> ANALOG
             "digital" -> DIGITAL
             "marker" -> MARKER
-            else -> throw IllegalArgumentException("Unexpected boaard mode: \"${mode}\".")
+            else -> null
         }
     }
 }
@@ -102,7 +105,7 @@ enum class SampleRate(val command:Command) {
 
     companion object {
         private val pattern = """Sample rate is (\d+)Hz""".toRegex()
-        internal fun fromMessage(message:String):SampleRate = when (val rate = findPattern(pattern, message)) {
+        internal fun fromMessage(message:String?):SampleRate? = when (findPattern(pattern, message)) {
             "16000" -> SR_16000
             "8000" -> SR_8000
             "4000" -> SR_4000
@@ -110,7 +113,7 @@ enum class SampleRate(val command:Command) {
             "1000" -> SR_1000
             "500" -> SR_500
             "250" -> SR_250
-            else -> throw IllegalArgumentException("Unexpected sample rate: \"${rate}\".")
+            else -> null
         }
     }
 }
