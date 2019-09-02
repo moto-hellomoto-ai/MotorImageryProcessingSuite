@@ -2,6 +2,15 @@ package ai.hellomoto.mip.openbci
 
 import java.util.logging.Logger
 
+private const val START_BYTE = 0xA0.toByte()
+private const val STOP_BYTE = 0xC0.toByte()
+
+private const val ADS1299VREF:Float = 4.5F
+private val EEG_SCALE:Float = 1000000.0F * ADS1299VREF / (Math.pow(2.0, 23.0).toFloat() - 1)
+
+fun parseEeg(raw:Int, gain:Float=24F):Float {
+    return raw * EEG_SCALE / gain
+}
 
 sealed class OperationResult {
     abstract val message:String
@@ -14,13 +23,18 @@ sealed class OperationResult {
     }
 }
 
-class Cyton(private val serial:ISerialWrapper)
+sealed class ReadPacketResult {
+    data class Success(val data:PacketData): ReadPacketResult()
+    data class Fail(val message:String): ReadPacketResult()
+}
+
+class Cyton(private val serial:ISerial)
 {
     companion object {
-        val LOG:Logger = Logger.getLogger(this::class.java.name)
+        val LOG:Logger = Logger.getLogger(this::class.qualifiedName)
     }
 
-    constructor(port:String, baudRate:Int=115200): this(SerialWrapper(port, baudRate)) {}
+    constructor(port:String, baudRate:Int=115200): this(Serial(port, baudRate)) {}
 
     fun close() { serial.close() }
 
@@ -38,8 +52,8 @@ class Cyton(private val serial:ISerialWrapper)
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    fun readMessage():OperationResult {
-        return when (val message = serial.readMessage()) {
+    fun readMessage(timeout:Int=3000):OperationResult {
+        return when (val message = serial.readMessage(timeout)) {
             null -> OperationResult.TimeOut()
             else -> OperationResult.Success(message)
         }
@@ -195,6 +209,18 @@ class Cyton(private val serial:ISerialWrapper)
     fun stopStreaming() {
         serial.sendCommand(Command.STOP_STREAMING)
         isStreaming = false
+    }
+    fun waitForStartByte() {
+        serial.waitByte(START_BYTE)
+    }
+    fun readPacket():ReadPacketResult {
+        val packet = serial.readPacket()
+        if (packet.stopByte == STOP_BYTE) {
+            packet.eegs = packet.rawEegs.map{parseEeg(it)}
+            return ReadPacketResult.Success(packet)
+        }
+        return ReadPacketResult.Fail(
+            "Invalid Stop Byte. Packet ID: ${packet.packetId}, Stop Byte: ${packet.stopByte}.")
     }
 
     ////////////////////////////////////////////////////////////////////////////
