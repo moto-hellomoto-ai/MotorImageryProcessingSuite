@@ -64,7 +64,7 @@ class Serial(port:String, baudRate:Int) : ISerial {
 
     override fun waitByte(value:Byte) {
         do {
-            val numRead = serial.readBytes(buffer, 1, 0)
+            val numRead = serial.readBytes(buffer, 1)
         } while (numRead != 1 || buffer[0] != value)
     }
 

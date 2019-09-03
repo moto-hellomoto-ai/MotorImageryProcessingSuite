@@ -2,6 +2,8 @@ package ai.hellomoto.mip.openbci
 
 import sun.misc.Signal
 import sun.misc.SignalHandler
+import java.util.*
+import kotlin.concurrent.scheduleAtFixedRate
 
 fun iterateBoardMode(cyton:Cyton) {
     println(cyton.boardMode)
@@ -39,16 +41,36 @@ fun main(args: Array<String>) {
     println("is daisy attached: ${cyton.isDaisyAttached}")
     println("is streaming: ${cyton.isStreaming}")
     println("is WiFi attached: ${cyton.isWifiAttached}")
-    cyton.startStreaming()
 
-    val startTime = System.currentTimeMillis()
+    // cyton.getDefaultSettings()
+    // cyton.resetChannels()
+    // iterateBoardMode(cyton)
+    // testDaisy(cyton)
+    // iterateSampleRate(cyton)
+
     var numSuccess = 0
     var numFail = 0
+
+    val timer = Timer("schedule", true)
+    val future = timer.scheduleAtFixedRate(5, 3) {
+        cyton.waitForStartByte()
+        val result = cyton.readPacket()
+        if (result is ReadPacketResult.Fail) {
+            numFail += 1
+            println(result)
+        } else {
+            numSuccess += 1
+        }
+    }
+    cyton.startStreaming()
+    val startTime = System.currentTimeMillis()
 
     Signal.handle(Signal("INT"), object : SignalHandler {
         override fun handle(sig: Signal) {
             println("Closing socket.")
             cyton.close()
+            println("waiting ...")
+            future.cancel()
             val numPacket = numSuccess + numFail
             val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
             println("Elapsed: ${elapsedTime} [sec]")
@@ -59,21 +81,5 @@ fun main(args: Array<String>) {
         }
     })
 
-    while (true) {
-        cyton.waitForStartByte()
-        val result = cyton.readPacket()
-        if (result is ReadPacketResult.Fail) {
-            numFail += 1
-            println(result)
-        } else {
-            numSuccess += 1
-        }
-    }
-
-
-    // cyton.getDefaultSettings()
-    // cyton.resetChannels()
-    // iterateBoardMode(cyton)
-    // testDaisy(cyton)
-    // iterateSampleRate(cyton)
+    Thread.sleep(10000000)
 }

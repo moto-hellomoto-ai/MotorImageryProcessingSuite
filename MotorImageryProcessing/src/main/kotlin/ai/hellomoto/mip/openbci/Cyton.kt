@@ -12,6 +12,13 @@ fun parseEeg(raw:Int, gain:Float=24F):Float {
     return raw * EEG_SCALE / gain
 }
 
+private fun trimBeforePrefix(message:String, prefix:String):String =
+    when (val index = message.indexOf(prefix)) {
+        -1 -> message
+        else -> message.substring(index)
+    }
+
+
 sealed class OperationResult {
     abstract val message:String
 
@@ -65,7 +72,7 @@ class Cyton(private val serial:ISerial)
         val message = serial.readMessage()
         return when {
             message == null -> OperationResult.TimeOut(Command.RESET_BOARD)
-            message.endsWith("$$$") -> OperationResult.Success(message)
+            message.endsWith("$$$") -> OperationResult.Success(trimBeforePrefix(message, "OpenBCI"))
             else -> OperationResult.Fail(message)
         }
     }
