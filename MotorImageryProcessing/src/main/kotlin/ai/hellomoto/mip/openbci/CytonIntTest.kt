@@ -1,25 +1,29 @@
 package ai.hellomoto.mip.openbci
 
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import sun.misc.Signal
 import sun.misc.SignalHandler
 import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
 
+val LOG: Logger = LogManager.getLogger("CytonIntTest")
+
 fun iterateBoardMode(cyton:Cyton) {
-    println(cyton.boardMode)
+    LOG.info(cyton.boardMode)
     for (mode in BoardMode.values().asIterable()) {
         cyton.boardMode = mode
-        println(cyton.boardMode)
+        LOG.info(cyton.boardMode)
     }
-    println(cyton.resetBoard())
-    println(cyton.boardMode)
+    LOG.info(cyton.resetBoard())
+    LOG.info(cyton.boardMode)
 }
 
 fun iterateSampleRate(cyton:Cyton) {
-    println(cyton.sampleRate)
+    LOG.info(cyton.sampleRate)
     for (mode in SampleRate.values().asIterable()) {
         cyton.sampleRate = mode
-        println(cyton.sampleRate)
+        LOG.info(cyton.sampleRate)
     }
 }
 
@@ -32,15 +36,15 @@ fun testDaisy(cyton:Cyton) {
 
 fun main(args: Array<String>) {
     val cyton = Cyton("tty.usbserial-DM00CXN8")
-    println(cyton.init())
-    println(cyton.sampleRate)
-    println(cyton.boardMode)
-    println(cyton.firmwareVersion)
-    println(cyton.wifiStatus)
-    println(cyton.attachDaisy())
-    println("is daisy attached: ${cyton.isDaisyAttached}")
-    println("is streaming: ${cyton.isStreaming}")
-    println("is WiFi attached: ${cyton.isWifiAttached}")
+    cyton.init().message.lines().map{ LOG.info(it) }
+    LOG.info(cyton.sampleRate)
+    LOG.info(cyton.boardMode)
+    LOG.info(cyton.firmwareVersion)
+    LOG.info(cyton.wifiStatus)
+    LOG.info(cyton.attachDaisy())
+    LOG.info("is daisy attached: ${cyton.isDaisyAttached}")
+    LOG.info("is streaming: ${cyton.isStreaming}")
+    LOG.info("is WiFi attached: ${cyton.isWifiAttached}")
 
     // cyton.getDefaultSettings()
     // cyton.resetChannels()
@@ -57,7 +61,7 @@ fun main(args: Array<String>) {
         val result = cyton.readPacket()
         if (result is ReadPacketResult.Fail) {
             numFail += 1
-            println(result)
+            LOG.info(result)
         } else {
             numSuccess += 1
         }
@@ -67,16 +71,16 @@ fun main(args: Array<String>) {
 
     Signal.handle(Signal("INT"), object : SignalHandler {
         override fun handle(sig: Signal) {
-            println("Closing socket.")
+            LOG.info("Closing socket.")
             cyton.close()
-            println("waiting ...")
+            LOG.info("waiting ...")
             future.cancel()
             val numPacket = numSuccess + numFail
             val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
-            println("Elapsed: ${elapsedTime} [sec]")
-            println("Total Packets: ${numPacket}")
-            println("${numPacket / elapsedTime} [PPS]")
-            println("Success Rate ${100F * numSuccess.toFloat() / numPacket.toFloat()}.")
+            LOG.info("Elapsed: ${elapsedTime} [sec]")
+            LOG.info("Total Packets: ${numPacket}")
+            LOG.info("${numPacket / elapsedTime} [PPS]")
+            LOG.info("Success Rate ${100F * numSuccess.toFloat() / numPacket.toFloat()}.")
             System.exit(0)
         }
     })

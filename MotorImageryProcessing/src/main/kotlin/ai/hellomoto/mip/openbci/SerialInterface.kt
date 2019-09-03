@@ -34,12 +34,12 @@ class Serial(port:String, baudRate:Int) : ISerial {
     }
 
     override fun sendCommand(cmd: ByteArray, length: Long) {
-        LOG.info(" --->>> ${cmd.toString(Charset.defaultCharset())}")
+        LOG.debug(" --->>> \"${cmd.toString(Charset.defaultCharset())}\"")
         serial.writeBytes(cmd, length)
     }
 
     override fun sendCommand(cmd:Command) {
-        LOG.info(" --->>> ${cmd} (${cmd.value.toString(Charset.defaultCharset())})")
+        LOG.debug(" --->>> ${cmd} \"${cmd.value.toString(Charset.defaultCharset())}\"")
         serial.writeBytes(cmd.value, cmd.value.size.toLong())
     }
 
@@ -52,9 +52,7 @@ class Serial(port:String, baudRate:Int) : ISerial {
             when {
                 isValidMessage(buffer, numRead) -> {
                     val message = toString(buffer, numRead)
-                    for (line in message.lines()) {
-                        LOG.info(" <<<--- $line")
-                    }
+                    message.lines().map{ LOG.debug(" <<<--- $it") }
                     return message
                 }
                 (System.currentTimeMillis() - start > timeout) -> {
