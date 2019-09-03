@@ -1,44 +1,12 @@
 package ai.hellomoto.mip.openbci
 
-import java.util.logging.Logger
-
-private const val START_BYTE = 0xA0.toByte()
-private const val STOP_BYTE = 0xC0.toByte()
-
-private const val ADS1299VREF:Float = 4.5F
-private val EEG_SCALE:Float = 1000000.0F * ADS1299VREF / (Math.pow(2.0, 23.0).toFloat() - 1)
-
-fun parseEeg(raw:Int, gain:Float=24F):Float {
-    return raw * EEG_SCALE / gain
-}
-
-private fun trimBeforePrefix(message:String, prefix:String):String =
-    when (val index = message.indexOf(prefix)) {
-        -1 -> message
-        else -> message.substring(index)
-    }
-
-
-sealed class OperationResult {
-    abstract val message:String
-
-    data class Success(override val message:String): OperationResult() {}
-    data class Fail(override val message:String):OperationResult() {}
-    data class Invalid(override val message:String):OperationResult() {}
-    data class TimeOut(override val message:String="TimeOut occurred while reading a message.") : OperationResult() {
-        constructor(command:Command):this("TimeOut occurred while checking result from ${command}") {}
-    }
-}
-
-sealed class ReadPacketResult {
-    data class Success(val data:PacketData): ReadPacketResult()
-    data class Fail(val message:String): ReadPacketResult()
-}
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 
 class Cyton(private val serial:ISerial)
 {
     companion object {
-        val LOG:Logger = Logger.getLogger(this::class.qualifiedName)
+        val LOG:Logger = LogManager.getLogger(Cyton::class.java.name)
     }
 
     constructor(port:String, baudRate:Int=115200): this(Serial(port, baudRate)) {}
@@ -86,6 +54,7 @@ class Cyton(private val serial:ISerial)
         set(mode) {
             requireNotNull(mode) { "Board Mode to set cannot be null." }
             field = setAndFetchBoardMode(mode.command)
+            if (field == null) { LOG.warn("Board mode was not set correctly.") }
         }
     private fun setAndFetchBoardMode(cmd:Command):BoardMode? {
         serial.sendCommand(cmd)
@@ -101,6 +70,7 @@ class Cyton(private val serial:ISerial)
         set(rate) {
             requireNotNull(rate) {"Sample Rate to set cannot be null."}
             field = setAndFetchSampleRate(rate.command)
+            if (field == null) { LOG.warn("Sample rate was not set correctly.") }
         }
     private fun setAndFetchSampleRate(cmd:Command):SampleRate? {
         serial.sendCommand(cmd)

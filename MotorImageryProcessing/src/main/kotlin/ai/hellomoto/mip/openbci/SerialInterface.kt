@@ -1,8 +1,9 @@
 package ai.hellomoto.mip.openbci
 
 import com.fazecast.jSerialComm.SerialPort
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import java.nio.charset.Charset
-import java.util.logging.Logger
 
 interface ISerial {
     fun sendCommand(cmd:ByteArray, length:Long)
@@ -19,6 +20,10 @@ interface ISerial {
 }
 
 class Serial(port:String, baudRate:Int) : ISerial {
+    companion object {
+        val LOG: Logger = LogManager.getLogger(Serial::class.qualifiedName)
+    }
+
     private val serial = SerialPort.getCommPort(port)
     private val buffer = ByteArray(1024)
 
@@ -79,9 +84,5 @@ class Serial(port:String, baudRate:Int) : ISerial {
 
     override fun close() {
         serial.closePort()
-    }
-
-    companion object {
-        val LOG:Logger = Logger.getLogger(this::class.qualifiedName)
     }
 }

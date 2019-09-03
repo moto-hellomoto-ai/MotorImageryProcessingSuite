@@ -7,16 +7,18 @@ import com.google.common.util.concurrent.MoreExecutors
 import io.grpc.Server
 import io.grpc.netty.NettyServerBuilder
 import io.grpc.stub.StreamObserver
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import java.net.InetSocketAddress
-import java.util.logging.Level
-import java.util.logging.Logger
 
 class RotationStreamProcessorGrpcImpl(
     private val callback: (RotationData)->Unit
 ):
     RotationStreamProcessorImplBase()
 {
-    private val logger = Logger.getLogger(RotationStreamProcessorGrpcImpl::class.java.name)
+    companion object {
+        val LOG:Logger = LogManager.getLogger(RotationStreamProcessorGrpcImpl::class.qualifiedName)
+    }
 
     override fun stream(
         responseObserver: StreamObserver<ProcessResult>?
@@ -31,7 +33,7 @@ class RotationStreamProcessorGrpcImpl(
             }
 
             override fun onError(t: Throwable) {
-                logger.log(Level.WARNING, "Stream stopped.")
+                LOG.warn("Stream stopped.")
             }
 
             override fun onCompleted() {
@@ -40,7 +42,7 @@ class RotationStreamProcessorGrpcImpl(
                 responseObserver?.onCompleted()
                 val duration = (System.nanoTime() - startTime) / 1e9f
                 val speed = counter.toFloat() / duration
-                logger.log(Level.INFO, "Received $counter points in $duration. $speed(p/s)")
+                LOG.warn("Received $counter points in $duration. $speed(p/s)")
             }
         }
     }
