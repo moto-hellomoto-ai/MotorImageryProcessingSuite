@@ -103,6 +103,15 @@ enum class SampleRate(val command:Command) {
     SR_500(Command.SET_SAMPLE_RATE_500),
     SR_250(Command.SET_SAMPLE_RATE_250);
 
+    fun toLong():Long = when (this) {
+        SR_16000 -> 16000
+        SR_8000 -> 8000
+        SR_4000 -> 4000
+        SR_2000 -> 2000
+        SR_1000 -> 1000
+        SR_500 -> 500
+        SR_250 -> 250
+    }
     companion object {
         private val pattern = """Sample rate is (\d+)Hz""".toRegex()
         internal fun fromMessage(message:String?):SampleRate? = when (findPattern(pattern, message)) {

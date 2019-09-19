@@ -3,9 +3,7 @@ package ai.hellomoto.mip.openbci
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import sun.misc.Signal
-import sun.misc.SignalHandler
-import java.util.*
-import kotlin.concurrent.scheduleAtFixedRate
+import kotlin.system.exitProcess
 
 val LOG: Logger = LogManager.getLogger("CytonIntTest")
 
@@ -55,35 +53,29 @@ fun main(args: Array<String>) {
     var numSuccess = 0
     var numFail = 0
 
-    val timer = Timer("schedule", true)
-    val future = timer.scheduleAtFixedRate(5, 3) {
-        cyton.waitForStartByte()
-        val result = cyton.readPacket()
-        if (result is ReadPacketResult.Fail) {
+    cyton.startStreaming {
+        if (it is ReadPacketResult.Fail) {
             numFail += 1
-            LOG.info(result)
+            LOG.info(it)
         } else {
             numSuccess += 1
         }
     }
-    cyton.startStreaming()
     val startTime = System.currentTimeMillis()
 
-    Signal.handle(Signal("INT"), object : SignalHandler {
-        override fun handle(sig: Signal) {
-            LOG.info("Closing socket.")
-            cyton.close()
-            LOG.info("waiting ...")
-            future.cancel()
-            val numPacket = numSuccess + numFail
-            val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
-            LOG.info("Elapsed: ${elapsedTime} [sec]")
-            LOG.info("Total Packets: ${numPacket}")
-            LOG.info("${numPacket / elapsedTime} [PPS]")
-            LOG.info("Success Rate ${100F * numSuccess.toFloat() / numPacket.toFloat()}.")
-            System.exit(0)
-        }
-    })
+    Signal.handle(Signal("INT")) {
+        LOG.info("Closing socket.")
+        cyton.close()
+        LOG.info("waiting ...")
+        cyton.stopStreaming()
+        val numPacket = numSuccess + numFail
+        val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
+        LOG.info("Elapsed: ${elapsedTime} [sec]")
+        LOG.info("Total Packets: ${numPacket}")
+        LOG.info("${numPacket / elapsedTime} [PPS]")
+        LOG.info("Success Rate ${100F * numSuccess.toFloat() / numPacket.toFloat()}.")
+        exitProcess(0)
+    }
 
     Thread.sleep(10000000)
 }

@@ -2,6 +2,8 @@ package ai.hellomoto.mip.openbci
 
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import java.util.*
+import kotlin.concurrent.scheduleAtFixedRate
 
 class Cyton(private val serial:ISerial)
 {
@@ -20,7 +22,7 @@ class Cyton(private val serial:ISerial)
         res = resetBoard()
         if (res !is OperationResult.Success) { return res }
         val boardInfo = res.message
-        LOG.info("* Resseting Channels.")
+        LOG.info("* Resetting Channels.")
         res = resetChannels()
         if (res !is OperationResult.Success) { return res }
         return OperationResult.Success(message=boardInfo)
@@ -183,8 +185,32 @@ class Cyton(private val serial:ISerial)
         isStreaming = true
     }
 
+    private var streamingTimer:Timer? = null
+    private var streamingTimerTask: TimerTask? = null
+    fun startStreaming(callback:(ReadPacketResult)->Unit):Boolean {
+        this.sampleRate?.let schedule@ {
+            val rate:Long = it.toLong()
+            if (rate > 1000) {
+                LOG.error("Sampling rate is higher than 1000. Cannot stream via serial COM.");
+                return@schedule
+            }
+            val period:Long = 1000 / rate
+            streamingTimer = Timer(true)
+            streamingTimerTask = streamingTimer?.scheduleAtFixedRate(0, period) {
+                waitForStartByte()
+                callback(readPacket());
+            }
+            startStreaming()
+        }
+        return isStreaming
+    }
+
     fun stopStreaming() {
         serial.sendCommand(Command.STOP_STREAMING)
+        streamingTimerTask?.cancel()
+        streamingTimerTask = null
+        streamingTimer?.cancel()
+        streamingTimer = null
         isStreaming = false
     }
     fun waitForStartByte() {
