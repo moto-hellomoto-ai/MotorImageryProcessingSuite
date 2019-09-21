@@ -6,7 +6,7 @@ import java.io.Closeable
 import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
 
-class Cyton(private val serial:ISerial): Closeable
+class Cyton(private val serial:ISerial): AutoCloseable
 {
     companion object {
         val LOG:Logger = LogManager.getLogger(Cyton::class.java.name)
