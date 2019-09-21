@@ -2,10 +2,11 @@ package ai.hellomoto.mip.openbci
 
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
+import java.io.Closeable
 import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
 
-class Cyton(private val serial:ISerial)
+class Cyton(private val serial:ISerial): Closeable
 {
     companion object {
         val LOG:Logger = LogManager.getLogger(Cyton::class.java.name)
@@ -13,10 +14,13 @@ class Cyton(private val serial:ISerial)
 
     constructor(port:String, baudRate:Int=115200): this(Serial(port, baudRate)) {}
 
-    fun close() { serial.close() }
+    private fun closeSocket() {
+        LOG.info("* Closing the socket.")
+        serial.close()
+    }
 
     ////////////////////////////////////////////////////////////////////////////
-    fun init():OperationResult {
+    fun initBoard():OperationResult {
         var res:OperationResult?
         LOG.info("* Resetting Board.")
         res = resetBoard()
@@ -26,6 +30,11 @@ class Cyton(private val serial:ISerial)
         res = resetChannels()
         if (res !is OperationResult.Success) { return res }
         return OperationResult.Success(message=boardInfo)
+    }
+
+    override fun close() {
+        stopStreaming()
+        closeSocket()
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -206,12 +215,14 @@ class Cyton(private val serial:ISerial)
     }
 
     fun stopStreaming() {
-        serial.sendCommand(Command.STOP_STREAMING)
-        streamingTimerTask?.cancel()
-        streamingTimerTask = null
-        streamingTimer?.cancel()
-        streamingTimer = null
-        isStreaming = false
+        if (isStreaming) {
+            serial.sendCommand(Command.STOP_STREAMING)
+            streamingTimerTask?.cancel()
+            streamingTimerTask = null
+            streamingTimer?.cancel()
+            streamingTimer = null
+            isStreaming = false
+        }
     }
     fun waitForStartByte() {
         serial.waitByte(START_BYTE)

@@ -7,11 +7,17 @@ import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
 import javafx.scene.control.*
 import javafx.scene.layout.*
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import org.jetbrains.anko.doAsync
 import tornadofx.*
 
 
-class BoardConfigFragment : Fragment("Board Configuration") {
+class BoardConfigFragment:Fragment("Board Configuration") {
+    companion object {
+        val LOG: Logger = LogManager.getLogger(BoardConfigFragment::class.qualifiedName)
+    }
+
     data class DefaultConfigs(
         val serialPort:String
     )
@@ -46,26 +52,27 @@ class BoardConfigFragment : Fragment("Board Configuration") {
 
     private fun connectButtonAction() {
         root.isDisable = true
-        println("Connecting ${portSelector.value}")
-        val cyton = Cyton(portSelector.value)
         try {
-            initConfigPane(cyton)
+            initConfigPane()
         } finally {
             root.isDisable = false
-            cyton.close()
         }
     }
 
-    private fun initConfigPane(cyton:Cyton) {
-        val result = cyton.init()
-        infoText.text = result.message
-        if (result is OperationResult.Success) {
-            storeDefaultPort()
-            configPane.isDisable = false
-            // Check samplerate and set in combobox
-            if (cyton.sampleRate != null) {
-                Platform.runLater {
-                    sampleRateSelector.value = cyton.sampleRate.toString()
+    private fun initConfigPane() {
+        LOG.info("Connecting ${portSelector.value}")
+        val cyton = Cyton(portSelector.value)
+        cyton.use {
+            val result = cyton.initBoard()
+            infoText.text = result.message
+            if (result is OperationResult.Success) {
+                storeDefaultPort()
+                configPane.isDisable = false
+                // Check sample rate and set in combobox
+                if (cyton.sampleRate != null) {
+                    Platform.runLater {
+                        sampleRateSelector.value = cyton.sampleRate.toString()
+                    }
                 }
             }
         }

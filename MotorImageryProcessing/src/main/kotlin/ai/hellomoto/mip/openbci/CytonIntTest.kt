@@ -31,10 +31,32 @@ fun testDaisy(cyton:Cyton) {
     cyton.detachDaisy()
 }
 
+class StreamMonitor {
+    private var numFail = 0
+    private var numSuccess = 0
+    private val startTime = System.currentTimeMillis()
 
-fun main(args: Array<String>) {
-    val cyton = Cyton("tty.usbserial-DM00CXN8")
-    cyton.init().message.lines().map{ LOG.info(it) }
+    fun append(result:ReadPacketResult) {
+        if (result is ReadPacketResult.Fail) {
+            numFail += 1
+            LOG.info(result)
+        } else {
+            numSuccess += 1
+        }
+    }
+
+    fun print() {
+        val numPacket = numSuccess + numFail
+        val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
+        LOG.info("Elapsed: ${elapsedTime} [sec]")
+        LOG.info("Total Packets: ${numPacket}")
+        LOG.info("${numPacket / elapsedTime} [PPS]")
+        LOG.info("Success Rate ${100F * numSuccess.toFloat() / numPacket.toFloat()}.")
+    }
+}
+
+fun runTest(cyton:Cyton) {
+    cyton.initBoard().message.lines().map { LOG.info(it) }
     LOG.info(cyton.sampleRate)
     LOG.info(cyton.boardMode)
     LOG.info(cyton.firmwareVersion)
@@ -50,32 +72,17 @@ fun main(args: Array<String>) {
     // testDaisy(cyton)
     // iterateSampleRate(cyton)
 
-    var numSuccess = 0
-    var numFail = 0
+    val monitor = StreamMonitor()
+    cyton.startStreaming(monitor::append)
 
-    cyton.startStreaming {
-        if (it is ReadPacketResult.Fail) {
-            numFail += 1
-            LOG.info(it)
-        } else {
-            numSuccess += 1
-        }
-    }
-    val startTime = System.currentTimeMillis()
+    val syncObject = Object();
+    Signal.handle(Signal("INT")) { synchronized(syncObject) { syncObject.notify() } }
+    synchronized(syncObject) { syncObject.wait() }
+    cyton.stopStreaming();
+    monitor.print();
+}
 
-    Signal.handle(Signal("INT")) {
-        LOG.info("Closing socket.")
-        cyton.close()
-        LOG.info("waiting ...")
-        cyton.stopStreaming()
-        val numPacket = numSuccess + numFail
-        val elapsedTime = (System.currentTimeMillis() - startTime) / 1000.0
-        LOG.info("Elapsed: ${elapsedTime} [sec]")
-        LOG.info("Total Packets: ${numPacket}")
-        LOG.info("${numPacket / elapsedTime} [PPS]")
-        LOG.info("Success Rate ${100F * numSuccess.toFloat() / numPacket.toFloat()}.")
-        exitProcess(0)
-    }
-
-    Thread.sleep(10000000)
+fun main(args: Array<String>) {
+    val cyton = Cyton("tty.usbserial-DM00CXN8")
+    cyton.use { runTest(cyton) }
 }
