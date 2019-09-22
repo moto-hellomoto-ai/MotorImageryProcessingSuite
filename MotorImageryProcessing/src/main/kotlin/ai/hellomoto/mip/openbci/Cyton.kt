@@ -2,7 +2,6 @@ package ai.hellomoto.mip.openbci
 
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
-import java.io.Closeable
 import java.util.*
 import kotlin.concurrent.scheduleAtFixedRate
 
