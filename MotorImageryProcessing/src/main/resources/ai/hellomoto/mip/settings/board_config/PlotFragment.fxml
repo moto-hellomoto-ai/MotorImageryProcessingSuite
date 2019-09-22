@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1">
+   <children>
+      <VBox>
+         <children>
+            <ToolBar prefHeight="39.0">
+              <items>
+                <Button mnemonicParsing="false" text="Button" />
+              </items>
+            </ToolBar>
+            <VBox fx:id="charts" minHeight="-Infinity" minWidth="-Infinity"  VBox.vgrow="ALWAYS" spacing="NaN" fillWidth="true">
+            </VBox>
+         </children>
+      </VBox>
+   </children>
+</AnchorPane>

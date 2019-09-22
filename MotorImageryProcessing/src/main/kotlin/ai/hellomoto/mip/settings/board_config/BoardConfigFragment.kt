@@ -34,7 +34,8 @@ class BoardConfigFragment:Fragment("Board Configuration") {
 
     // Serial port selector
     private val portSelector: ComboBox<String> by fxid("portSelector")
-    private val connectButton: Button by fxid("connectButton")
+    private val initializeButton: Button by fxid("initializeButton")
+    private val testStreamButton: Button by fxid("testStreamButton")
 
     // Board config
     private val configPane: AnchorPane by fxid("configPane")
@@ -46,35 +47,45 @@ class BoardConfigFragment:Fragment("Board Configuration") {
         if (storedConfig.serialPort.value in portSelector.items) {
             portSelector.value = storedConfig.serialPort.value
         }
-        connectButton.action { doAsync { connectButtonAction() } }
+        initializeButton.action { doAsync { initializeButtonAction() } }
+        testStreamButton.action { doAsync { testStreamButtonAction() } }
         sampleRateSelector.items = FXCollections.observableArrayList(getSampleRates())
     }
 
-    private fun connectButtonAction() {
+    private fun withUIDisabled(action:() -> Unit) {
         root.isDisable = true
         try {
-            initConfigPane()
+            action()
         } finally {
             root.isDisable = false
         }
     }
 
+    private fun initializeButtonAction() { withUIDisabled(this::initConfigPane) }
+    private fun testStreamButtonAction() { withUIDisabled(this::testStream) }
+
     private fun initConfigPane() {
         LOG.info("Connecting ${portSelector.value}")
-        val cyton = Cyton(portSelector.value)
-        cyton.use {
-            val result = cyton.initBoard()
+        Cyton(portSelector.value).use {
+            val result = it.initBoard()
             infoText.text = result.message
             if (result is OperationResult.Success) {
                 storeDefaultPort()
                 configPane.isDisable = false
                 // Check sample rate and set in combobox
-                if (cyton.sampleRate != null) {
+                if (it.sampleRate != null) {
                     Platform.runLater {
-                        sampleRateSelector.value = cyton.sampleRate.toString()
+                        sampleRateSelector.value = it.sampleRate.toString()
                     }
                 }
             }
+        }
+    }
+
+    private fun testStream() {
+        LOG.info("Testing Streaming ...")
+        Platform.runLater {
+            find<PlotFragment>().openModal()
         }
     }
 

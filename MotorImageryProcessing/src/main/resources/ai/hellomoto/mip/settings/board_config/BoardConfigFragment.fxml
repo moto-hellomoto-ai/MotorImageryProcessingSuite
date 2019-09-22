@@ -13,7 +13,8 @@
       <ToolBar fx:id="toolbar" prefHeight="40.0" prefWidth="600.0">
         <items>
             <ComboBox fx:id="portSelector" prefWidth="150.0" promptText="Serial Port" />
-            <Button fx:id="connectButton" mnemonicParsing="false" text="Connect" />
+            <Button fx:id="initializeButton" mnemonicParsing="false" text="Initialize" />
+            <Button fx:id="testStreamButton" mnemonicParsing="false" text="Test Stream" />
         </items>
       </ToolBar>
       <TextArea fx:id="infoText" editable="false" maxHeight="-Infinity" minHeight="-Infinity" prefHeight="125.0">
