@@ -127,7 +127,14 @@ enum class SampleRate(val command:Command) {
     }
 }
 
-object ChannelConfig {
+data class ChannelConfig(
+    val powerDown:PowerDown,
+    val gainSet:GainSet,
+    val inputTypeSet:InputTypeSet,
+    val biasSet:BiasSet,
+    val srb2Set:SRB2Set,
+    val srb1Set:SRB1Set
+) {
     enum class Channel(val command:Byte) {
         CHANNEL1(1),
         CHANNEL2(2),
@@ -167,9 +174,16 @@ object ChannelConfig {
             }
         }
     }
-    enum class PowerDown (val command:Byte) {
+    enum class PowerDown(val command:Byte) {
         ON(0),
         OFF(1);
+        companion object {
+            fun fromInt(value: Int): PowerDown = when (value.toInt()) {
+                0 -> ON
+                1 -> OFF
+                else -> throw IllegalArgumentException("PowerDown value must be [0, 1]. Found: \"${value}\"")
+            }
+        }
     }
     enum class GainSet(val command:Byte) {
         GAIN1(0),
@@ -179,6 +193,18 @@ object ChannelConfig {
         GAIN8(4),
         GAIN12(5),
         GAIN24(6);
+        companion object {
+            fun fromInt(value:Int): GainSet = when(value.toInt()) {
+                0 -> GAIN1
+                1 -> GAIN2
+                2 -> GAIN4
+                3 -> GAIN6
+                4 -> GAIN8
+                5 -> GAIN12
+                6 -> GAIN24
+                else -> throw IllegalArgumentException("GainSet value must be [0, 6]. Found: \"${value}\"")
+            }
+        }
     }
     enum class InputTypeSet(val command:Byte) {
         ADSINPUT_NORMAL(0),
@@ -189,17 +215,61 @@ object ChannelConfig {
         ADSINPUT_TESTSIG(5),
         ADSINPUT_BIAS_DRP(6),
         ADSINPUT_BIAS_DRN(7);
+
+        companion object {
+            fun fromInt(value: Int): InputTypeSet = when (value.toInt()) {
+                0 -> ADSINPUT_NORMAL
+                1 -> ADSINADSINPUT_SHORTEDPUT_NORMAL
+                2 -> ADSINPUT_BIAS_MEAS
+                3 -> ADSINPUT_MVDD
+                4 -> ADSINPUT_TEMP
+                5 -> ADSINPUT_TESTSIG
+                6 -> ADSINPUT_BIAS_DRP
+                7 -> ADSINPUT_BIAS_DRN
+                else -> throw IllegalArgumentException("InputTypeSet value must be [0, 7]. Found: \"${value}\"")
+            }
+        }
     }
     enum class BiasSet(val command:Byte) {
         REMOVE(0),
         INCLUDE(1);
+        companion object {
+            fun fromInt(value: Int): BiasSet = when (value.toInt()) {
+                0 -> REMOVE
+                1 -> INCLUDE
+                else -> throw IllegalArgumentException("BiasSet value must be [0, 7]. Found: \"${value}\"")
+            }
+        }
     }
     enum class SRB2Set(val command:Byte) {
         DISCONNECT(0),
         CONNECT(1);
+        companion object {
+            fun fromInt(value: Int): SRB2Set = when (value.toInt()) {
+                0 -> DISCONNECT
+                1 -> CONNECT
+                else -> throw IllegalArgumentException("SRB2Set value must be [0, 7]. Found: \"${value}\"")
+            }
+        }
     }
     enum class SRB1Set(val command:Byte) {
         DISCONNECT(0),
         CONNECT(1);
+        companion object {
+            fun fromInt(value: Int): SRB1Set = when (value.toInt()) {
+                0 -> DISCONNECT
+                1 -> CONNECT
+                else -> throw IllegalArgumentException("SRB1Set value must be [0, 7]. Found: \"${value}\"")
+            }
+        }
+    }
+
+    companion object {
+        fun fromInts(powerDown:Int, gainSet:Int, inputTypeSet:Int, biasSet:Int, srb2Set:Int, srb1Set:Int):ChannelConfig {
+            return ChannelConfig(
+                PowerDown.fromInt(powerDown), GainSet.fromInt(gainSet), InputTypeSet.fromInt(inputTypeSet),
+                BiasSet.fromInt(biasSet), SRB2Set.fromInt(srb2Set), SRB1Set.fromInt(srb1Set)
+            )
+        }
     }
 }

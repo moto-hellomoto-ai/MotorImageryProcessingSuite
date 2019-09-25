@@ -49,7 +49,7 @@ class StreamMonitor {
         LOG.info("Elapsed: ${elapsedTime} [sec]")
         LOG.info("Total Packets: ${numPacket}")
         LOG.info("${numPacket / elapsedTime} [PPS]")
-        LOG.info("Success Rate ${100F * (numPacket - numPacket).toFloat() / numPacket.toFloat()}.")
+        LOG.info("Success Rate ${100F * (numPacket - numFail).toFloat() / numPacket.toFloat()}.")
     }
 }
 
@@ -60,6 +60,7 @@ fun runTest(cyton: Cyton): Int {
         return 1
     }
 
+    LOG.info(cyton.getDefaultSettings())
     LOG.info(cyton.sampleRate)
     LOG.info(cyton.boardMode)
     LOG.info(cyton.firmwareVersion)

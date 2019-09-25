@@ -294,17 +294,19 @@ class Cyton(private val serial:ISerial): AutoCloseable
     ////////////////////////////////////////////////////////////////////////////
     fun resetChannels():OperationResult {
         serial.sendCommand(Command.RESET_CHANNELS)
-        val message = serial.readMessage()
-        return when (message) {
+        return when (val message = serial.readMessage()) {
             null -> OperationResult.TimeOut(Command.RESET_CHANNELS)
             // TODO: Add failure case
             else -> OperationResult.Success(message)
         }
     }
 
-    fun getDefaultSettings() {
+    fun getDefaultSettings():OperationResult {
         serial.sendCommand(Command.QUERY_DEFAULT_SETTINGS)
-        val message = serial.readMessage()
+        return when (val message = serial.readMessage()) {
+            null -> OperationResult.Fail("Failed to fetch default setting.")
+            else -> OperationResult.parseDefaultConfig(message)
+        }
     }
 
     fun configureChannel(
