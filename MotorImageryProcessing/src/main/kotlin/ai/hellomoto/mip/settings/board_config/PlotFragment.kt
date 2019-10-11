@@ -26,7 +26,7 @@ class PlotFragment : Fragment() {
         style = "-fx-border-color: blue"
     }
 
-    private val serieses: ArrayList<ObservableList<XYChart.Data<String, Float>>> = arrayListOf()
+    private val serieses: ArrayList<ObservableList<XYChart.Data<String, Number>>> = arrayListOf()
 
     init {
         initCharts(4)
@@ -40,7 +40,7 @@ class PlotFragment : Fragment() {
 
         for (i in 1..numCharts) {
             val chartFragment = ChartFragment(hideXAxis = true)
-            chartFragment.chart.prefHeightProperty().bind(chartHeightBinding)
+            chartFragment.root.prefHeightProperty().bind(chartHeightBinding)
             root.add(chartFragment)
             serieses.add(chartFragment.series.data)
         }
