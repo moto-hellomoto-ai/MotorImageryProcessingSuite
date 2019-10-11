@@ -5,9 +5,9 @@ import javafx.application.Platform
 import javafx.beans.binding.Bindings
 import javafx.collections.ObservableList
 import javafx.scene.chart.XYChart
-import javafx.scene.layout.AnchorPane
-import javafx.scene.layout.VBox
-import tornadofx.Fragment
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
+import tornadofx.*
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Callable
@@ -16,33 +16,32 @@ import kotlin.math.min
 
 
 class PlotFragment : Fragment() {
-    override val root: AnchorPane by fxml()
-    private val charts: VBox by fxid("charts")
+    companion object {
+        val LOG: Logger = LogManager.getLogger(this::class.qualifiedName)
+    }
+
+    override val root = vbox {
+        prefWidth = 600.0
+        prefHeight = 400.0
+        style = "-fx-border-color: blue"
+    }
+
     private val serieses: ArrayList<ObservableList<XYChart.Data<String, Float>>> = arrayListOf()
 
     init {
-        initChartContainer(4)
         initCharts(4)
         startStreaming()
     }
 
-    private fun initChartContainer(numCharts: Int) {
-        charts.prefWidthProperty().bind(root.widthProperty())
-        charts.prefHeightProperty().bind(Bindings.createDoubleBinding(Callable<Double> {
-            min(root.heightProperty().get() - 39.0, 100.0 * numCharts.toDouble())
-        }, root.heightProperty()))
-        charts.style = "-fx-border-color: blue"
-    }
-
     private fun initCharts(numCharts:Int) {
         val chartHeightBinding = Bindings.createDoubleBinding(Callable<Double> {
-            min(100.0, (root.heightProperty().get() - 39.0) / numCharts.toDouble())
+            min(100.0, root.heightProperty().get() / numCharts.toDouble())
         }, root.heightProperty())
 
         for (i in 1..numCharts) {
             val chartFragment = ChartFragment(hideXAxis = true)
             chartFragment.chart.prefHeightProperty().bind(chartHeightBinding)
-            charts.add(chartFragment)
+            root.add(chartFragment)
             serieses.add(chartFragment.series.data)
         }
     }
@@ -64,6 +63,7 @@ class PlotFragment : Fragment() {
         }
     }
     fun stopStreaming() {
+        LOG.info("Stopping stream")
         streamingTimerTask?.cancel()
         streamingTimerTask = null
         streamingTimer?.cancel()
