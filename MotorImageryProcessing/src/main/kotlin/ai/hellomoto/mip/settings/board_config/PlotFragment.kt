@@ -17,7 +17,7 @@ import kotlin.math.min
 
 class PlotFragment : Fragment() {
     companion object {
-        val LOG: Logger = LogManager.getLogger(this::class.qualifiedName)
+        val LOG: Logger = LogManager.getLogger(PlotFragment::class.qualifiedName)
     }
 
     override val root = vbox {

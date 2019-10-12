@@ -2,67 +2,98 @@ package ai.hellomoto.mip.settings.board_config
 
 import ai.hellomoto.mip.openbci.Cyton
 import ai.hellomoto.mip.openbci.OperationResult
+import ai.hellomoto.mip.openbci.SampleRate
+import com.fazecast.jSerialComm.SerialPort
 import javafx.application.Platform
-import javafx.beans.property.SimpleStringProperty
 import javafx.collections.FXCollections
 import javafx.scene.control.*
 import javafx.scene.layout.*
+import javafx.scene.text.Font
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.jetbrains.anko.doAsync
 import tornadofx.*
 
-
-class BoardConfigFragment:Fragment("Board Configuration") {
+class BoardConfigFragment : Fragment("Board Configuration") {
     companion object {
         val LOG: Logger = LogManager.getLogger(BoardConfigFragment::class.qualifiedName)
+
+        fun getPorts(): List<String> {
+            return SerialPort.getCommPorts().map { it.systemPortName }
+        }
+
+        fun getSampleRates(): List<String> {
+            return SampleRate.values().map { it.toString() }.asReversed()
+        }
     }
 
-    data class DefaultConfigs(
-        val serialPort:String
-    )
+    private var portSelector: ComboBox<String> by singleAssign()
+    private var infoText: TextArea by singleAssign()
+    private var configPane: AnchorPane by singleAssign()
+    private var sampleRateSelector: ComboBox<String> by singleAssign()
 
-    class StoredConfig:ItemViewModel<DefaultConfigs>() {
-        val serialPort = bind { SimpleStringProperty(item?.serialPort, "", config.string("serialPort")) }
-    }
-
-    override val root:VBox by fxml()
     private val storedConfig = StoredConfig()
 
-    private val toolbar: ToolBar by fxid("toolbar")
-    private val infoText: TextArea by fxid("infoText")
-
-    // Serial port selector
-    private val portSelector: ComboBox<String> by fxid("portSelector")
-    private val initializeButton: Button by fxid("initializeButton")
-    private val testStreamButton: Button by fxid("testStreamButton")
-
-    // Board config
-    private val configPane: AnchorPane by fxid("configPane")
-    private val sampleRateSelector:ComboBox<String> by fxid("sampleRateSelector")
-
-    init {
-        toolbar.prefWidthProperty().bind(root.widthProperty())
-        portSelector.items = FXCollections.observableArrayList(getPorts())
-        if (storedConfig.serialPort.value in portSelector.items) {
-            portSelector.value = storedConfig.serialPort.value
+    override val root = vbox {
+        prefHeight = 600.0
+        prefWidth = 600.0
+        toolbar {
+            portSelector = combobox {
+                promptText = "Serial Port"
+                items = FXCollections.observableArrayList(getPorts())
+                value = if (storedConfig.serialPort.value in items) {
+                    storedConfig.serialPort.value
+                } else {
+                    items[0]
+                }
+            }
+            button("Initialize") {
+                action { withUIDisabled(this@BoardConfigFragment::initConfigPane) }
+            }
+            button("Test Stream") {
+                action { withUIDisabled(this@BoardConfigFragment::testStream) }
+            }
         }
-        initializeButton.action { doAsync { initializeButtonAction() } }
-        testStreamButton.action { doAsync { testStreamButtonAction() } }
-        sampleRateSelector.items = FXCollections.observableArrayList(getSampleRates())
+        infoText = textarea {
+            isEditable = false
+            font = Font.font("Comic Sans MS", 13.0)
+            prefHeight = 280.0
+            maxHeight = 280.0
+            vboxConstraints {
+                marginTop = 8.0
+                marginBottom = 4.0
+                marginLeft = 8.0
+                marginRight = 8.0
+            }
+        }
+        configPane = anchorpane {
+            isDisable = true
+            sampleRateSelector = combobox {
+                items = FXCollections.observableArrayList(getSampleRates())
+                value = if (storedConfig.sampleRate.value in items) {
+                    storedConfig.sampleRate.value
+                } else {
+                    items[0]
+                }
+            }
+            prefHeight = 560.0
+            vboxConstraints {
+                marginTop = 4.0
+                marginLeft = 8.0
+            }
+        }
     }
 
-    private fun withUIDisabled(action:() -> Unit) {
-        root.isDisable = true
-        try {
-            action()
-        } finally {
-            root.isDisable = false
+    private fun withUIDisabled(action: () -> Unit) {
+        doAsync {
+            root.isDisable = true
+            try {
+                action()
+            } finally {
+                root.isDisable = false
+            }
         }
     }
-
-    private fun initializeButtonAction() { withUIDisabled(this::initConfigPane) }
-    private fun testStreamButtonAction() { withUIDisabled(this::testStream) }
 
     private fun initConfigPane() {
         LOG.info("Connecting ${portSelector.value}")
@@ -70,13 +101,15 @@ class BoardConfigFragment:Fragment("Board Configuration") {
             val result = it.initBoard()
             infoText.text = result.message
             if (result is OperationResult.Success) {
-                storeDefaultPort()
+                storeDefault("serialPort", portSelector.value)
                 configPane.isDisable = false
                 // Check sample rate and set in combobox
                 if (it.sampleRate != null) {
+                    val sampleRate = it.sampleRate.toString()
                     Platform.runLater {
-                        sampleRateSelector.value = it.sampleRate.toString()
+                        sampleRateSelector.value = sampleRate
                     }
+                    storeDefault("sampleRate", sampleRate)
                 }
             }
         }
@@ -89,9 +122,9 @@ class BoardConfigFragment:Fragment("Board Configuration") {
         }
     }
 
-    private fun storeDefaultPort() {
+    private fun storeDefault(key: String, value: String) {
         with(storedConfig.config) {
-            set("serialPort" to portSelector.value)
+            set(key to value)
             save()
         }
     }
