@@ -7,7 +7,7 @@ import javafx.scene.chart.LineChart
 import javafx.scene.chart.NumberAxis
 
 
-class CustomLineChart: LineChart<String, Number>(
+class CustomLineChart : LineChart<String, Number>(
     CategoryAxis().apply {
         animated = false
         side = Side.BOTTOM

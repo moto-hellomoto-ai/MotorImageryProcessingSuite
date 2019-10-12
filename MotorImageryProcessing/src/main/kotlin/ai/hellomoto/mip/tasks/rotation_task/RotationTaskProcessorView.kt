@@ -1,72 +1,64 @@
 package ai.hellomoto.mip.tasks.rotation_task
 
 import ai.hellomoto.mip.MainView
-import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorService.RotationData
-import javafx.application.Platform
 import javafx.collections.ObservableList
+import javafx.geometry.Side
+import javafx.scene.chart.CategoryAxis
 import javafx.scene.chart.LineChart
+import javafx.scene.chart.NumberAxis
 import javafx.scene.chart.XYChart
-import javafx.scene.control.MenuItem
 import javafx.scene.control.ToggleButton
-import javafx.scene.layout.AnchorPane
 import tornadofx.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 
-class Handler(private val series_data: ObservableList<XYChart.Data<String, Float>>) {
-    private val dateFormat = SimpleDateFormat("HH:mm:ss:SSSS")
-    private var lastUpdate:Long = 0
+class RotationTaskProcessorView : View() {
+    private var chart: LineChart<String, Number> by singleAssign()
 
-    fun handleMessage(data:RotationData) {
-        val t = dateFormat.format(Date())
-        val now = System.currentTimeMillis()
-        if (now - lastUpdate > 60) {
-            Platform.runLater {
-                series_data.add(XYChart.Data(t, data.velocity))
-                if (series_data.size > 300) {
-                    series_data.removeAt(0)
+    override val root = vbox {
+        menubar {
+            menu {
+                text = "Rotation Task"
+                item("Quit") {
+                    action { replaceWith<MainView>() }
                 }
             }
-            lastUpdate = now
+        }
+        chart = linechart("Rotation",
+            CategoryAxis().apply {
+                animated = false
+                side = Side.BOTTOM
+                prefHeight = 0.0
+            },
+            NumberAxis().apply {
+                animated = false
+                side = Side.LEFT
+                isForceZeroInRange = false
+            }
+        ) {
+            createSymbols = false
+            animated = false
+            verticalGridLinesVisible = false
+        }
+        togglebutton("Start") {
+            isSelected = false
+            action { onToggle(this) }
         }
     }
-}
 
-class RotationTaskProcessorView: View() {
+    private val data: ObservableList<XYChart.Data<String, Number>> = chart.series("Plot").data
 
-    override val root: AnchorPane by fxml()
-    private val quit: MenuItem by fxid("quit")
-
-    private val port: Int = 59898
-
-    private val chart: LineChart<String, Float> by fxid("chart")
-    private val series: XYChart.Series<String, Float>
-    private var data: ObservableList<XYChart.Data<String, Float>>
-
-    private val toggleButton: ToggleButton by fxid("toggleButton")
     private var bgServer: io.grpc.Server? = null
-
-    init {
-        quit.action { replaceWith<MainView>() }
-
-        series = chart.series("Plot") {}
-        data = series.data
-
-        toggleButton.action {this.onToggle()}
-    }
-
-    private fun onToggle()  {
-        if (toggleButton.isSelected) {
+    private fun onToggle(button: ToggleButton) {
+        if (button.isSelected) {
             data.clear()
-            val handler = Handler(data)
-            bgServer = getServer(port=port) {data -> handler.handleMessage(data)}
+            val handler = RotationDataHandler(data)
+            bgServer = getServer(port = 59898) { data -> handler.handleMessage(data) }
             bgServer?.start()
-            toggleButton.text = "ON"
+            button.text = "Stop"
         } else {
             bgServer?.shutdownNow()
             bgServer = null
-            toggleButton.text = "OFF"
+            button.text = "Start"
         }
     }
 }
