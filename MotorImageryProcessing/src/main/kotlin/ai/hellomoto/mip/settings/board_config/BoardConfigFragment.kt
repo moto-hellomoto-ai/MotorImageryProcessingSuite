@@ -118,7 +118,7 @@ class BoardConfigFragment : Fragment("Board Configuration") {
     private fun testStream() {
         LOG.info("Testing Streaming ...")
         Platform.runLater {
-            find<PlotFragment>().openModal()
+            find<StreamTesterFragment>().openModal()
         }
     }
 

@@ -1,6 +1,5 @@
 package ai.hellomoto.mip.common_fragments
 
-import javafx.collections.FXCollections
 import javafx.geometry.Side
 import javafx.scene.chart.CategoryAxis
 import javafx.scene.chart.LineChart
@@ -21,13 +20,14 @@ class CustomLineChart : LineChart<String, Number>(
     }
 ) {
     init {
-        data = FXCollections.observableArrayList()
         createSymbols = false
         animated = false
         verticalGridLinesVisible = false
+        // style = "-fx-border-color: red"
     }
 
-    fun hideXAxis() {
+    fun hideXAxis(): CustomLineChart {
         chartChildren.remove(this.xAxis)
+        return this
     }
 }
