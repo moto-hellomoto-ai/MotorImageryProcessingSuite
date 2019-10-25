@@ -6,9 +6,11 @@ import ai.hellomoto.mip.openbci.SampleRate
 import com.fazecast.jSerialComm.SerialPort
 import javafx.application.Platform
 import javafx.collections.FXCollections
-import javafx.scene.control.*
-import javafx.scene.layout.*
+import javafx.scene.control.ComboBox
+import javafx.scene.control.TextField
+import javafx.scene.layout.AnchorPane
 import javafx.scene.text.Font
+import javafx.scene.text.Text
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.jetbrains.anko.doAsync
@@ -28,16 +30,17 @@ class BoardConfigFragment : Fragment("Board Configuration") {
     }
 
     private var portSelector: ComboBox<String> by singleAssign()
-    private var infoText: TextArea by singleAssign()
+    private var boardInfoText: TextField by singleAssign()
     private var configPane: AnchorPane by singleAssign()
     private var sampleRateSelector: ComboBox<String> by singleAssign()
+    private var statusInfoText: Text by singleAssign()
 
     private val storedConfig = StoredConfig()
 
-    override val root = vbox {
+    override val root = borderpane {
         prefHeight = 600.0
         prefWidth = 600.0
-        toolbar {
+        top = toolbar {
             portSelector = combobox {
                 promptText = "Serial Port"
                 items = FXCollections.observableArrayList(getPorts())
@@ -54,32 +57,39 @@ class BoardConfigFragment : Fragment("Board Configuration") {
                 action { withUIDisabled(this@BoardConfigFragment::testStream) }
             }
         }
-        infoText = textarea {
-            isEditable = false
-            font = Font.font("Comic Sans MS", 13.0)
-            prefHeight = 280.0
-            maxHeight = 280.0
-            vboxConstraints {
-                marginTop = 8.0
-                marginBottom = 4.0
-                marginLeft = 8.0
-                marginRight = 8.0
-            }
-        }
-        configPane = anchorpane {
-            isDisable = true
-            sampleRateSelector = combobox {
-                items = FXCollections.observableArrayList(getSampleRates())
-                value = if (storedConfig.sampleRate.value in items) {
-                    storedConfig.sampleRate.value
-                } else {
-                    items[0]
+        center = vbox {
+            boardInfoText = textfield {
+                usePrefHeight = true
+                prefHeight = 160.0
+                isEditable = false
+                font = Font.font("Comic Sans MS", 13.0)
+                vboxConstraints {
+                    marginTop = 8.0
+                    marginBottom = 4.0
+                    marginRight = 8.0
+                    marginLeft = 8.0
                 }
             }
-            prefHeight = 560.0
-            vboxConstraints {
-                marginTop = 4.0
-                marginLeft = 8.0
+            configPane = anchorpane {
+                isDisable = true
+                // prefHeight = 560.0
+                sampleRateSelector = combobox {
+                    items = FXCollections.observableArrayList(getSampleRates())
+                    value = if (storedConfig.sampleRate.value in items) {
+                        storedConfig.sampleRate.value
+                    } else {
+                        items[0]
+                    }
+                    anchorpaneConstraints {
+                        topAnchor = 4.0
+                        leftAnchor = 8.0
+                    }
+                }
+            }
+        }
+        bottom = hbox {
+            statusInfoText = text {
+                maxHeight = 24.0
             }
         }
     }
@@ -98,8 +108,9 @@ class BoardConfigFragment : Fragment("Board Configuration") {
     private fun initConfigPane() {
         LOG.info("Connecting ${portSelector.value}")
         Cyton(portSelector.value).use {
+            Platform.runLater { statusInfoText.text = "Initializing board..." }
             val result = it.initBoard()
-            infoText.text = result.message
+            boardInfoText.text = result.message
             if (result is OperationResult.Success) {
                 storeDefault("serialPort", portSelector.value)
                 configPane.isDisable = false
@@ -111,6 +122,9 @@ class BoardConfigFragment : Fragment("Board Configuration") {
                     }
                     storeDefault("sampleRate", sampleRate)
                 }
+                Platform.runLater { statusInfoText.text = "Initialized board." }
+            } else {
+                Platform.runLater { statusInfoText.text = "Failed to initialize board." }
             }
         }
     }

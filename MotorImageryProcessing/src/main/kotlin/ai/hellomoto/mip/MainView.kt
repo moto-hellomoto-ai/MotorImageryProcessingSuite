@@ -5,10 +5,10 @@ import ai.hellomoto.mip.tasks.rotation_task.RotationTaskProcessorView
 import tornadofx.*
 
 class MainView : View() {
-    override val root = vbox {
+    override val root = borderpane {
         prefHeight = 400.0
         prefWidth = 600.0
-        menubar {
+        top = menubar {
             menu("Settings") {
                 item("Board") {
                     action { find<BoardConfigFragment>().openModal() }
