@@ -1,4 +1,4 @@
-package ai.hellomoto.mip.common_fragments
+package ai.hellomoto.mip.javafx
 
 import javafx.geometry.Side
 import javafx.scene.chart.CategoryAxis

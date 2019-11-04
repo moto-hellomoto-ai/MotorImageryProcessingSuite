@@ -1,6 +1,6 @@
 package ai.hellomoto.mip.settings.board_config
 
-import ai.hellomoto.mip.common_fragments.CustomLineCharts
+import ai.hellomoto.mip.javafx.CustomLineCharts
 import javafx.application.Platform
 import javafx.scene.chart.XYChart
 import org.apache.logging.log4j.LogManager
