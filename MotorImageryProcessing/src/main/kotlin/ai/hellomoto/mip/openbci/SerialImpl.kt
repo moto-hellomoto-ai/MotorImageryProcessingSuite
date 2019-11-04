@@ -5,23 +5,9 @@ import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.nio.charset.Charset
 
-interface ISerial {
-    fun sendCommand(cmd:ByteArray, length:Long)
-
-    fun sendCommand(cmd:Command)
-
-    fun readMessage(timeout:Int=3000): String?
-
-    fun waitByte(value:Byte)
-
-    fun readPacket(): PacketData
-
-    fun close()
-}
-
-class Serial(port:String, baudRate:Int) : ISerial {
+class SerialImpl(port:String, baudRate:Int) : ISerial {
     companion object {
-        val LOG: Logger = LogManager.getLogger(Serial::class.qualifiedName)
+        val LOG: Logger = LogManager.getLogger(SerialImpl::class.qualifiedName)
     }
 
     private val serial = SerialPort.getCommPort(port)

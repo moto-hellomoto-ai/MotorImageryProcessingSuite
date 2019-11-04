@@ -1,7 +1,6 @@
 package ai.hellomoto.mip
 
-import ai.hellomoto.mip.settings.board_config.BoardConfigFragment
-import ai.hellomoto.mip.tasks.rotation_task.RotationTaskProcessorView
+import ai.hellomoto.mip.tasks.rotation.app.RotationTaskView
 import tornadofx.*
 
 class MainView : View() {
@@ -9,14 +8,13 @@ class MainView : View() {
         prefHeight = 400.0
         prefWidth = 600.0
         top = menubar {
-            menu("Settings") {
-                item("Board") {
-                    action { find<BoardConfigFragment>().openModal() }
-                }
-            }
             menu("Tasks") {
                 item("Rotation") {
-                    action { replaceWith<RotationTaskProcessorView>() }
+                    action {
+                        close()
+                        find<RotationTaskView>().openWindow(
+                            block = true, escapeClosesWindow = false)
+                    }
                 }
             }
         }

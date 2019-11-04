@@ -2,12 +2,13 @@ package ai.hellomoto.mip.openbci
 
 private fun b(command:String):ByteArray = command.toByteArray()
 
-private fun findPattern(pattern:Regex, message:String?):String? {
-    return when (message) {
-        null -> null
-        else -> pattern.find(message)?.groups?.get(1)?.value
-    }
-}
+data class PacketData(
+    val packetId:Int,
+    val stopByte: Byte,
+    val rawEegs:List<Int>,
+    val auxs:List<Int>,
+    var eegs:List<Float> = listOf()
+)
 
 enum class Command(val value:ByteArray) {
     // COMMON
@@ -80,18 +81,6 @@ enum class BoardMode(val command:Command) {
     ANALOG (Command.SET_BOARD_MODE_ANALOG),
     DIGITAL(Command.SET_BOARD_MODE_DIGITAL),
     MARKER (Command.SET_BOARD_MODE_MARKER);
-
-    companion object {
-        private val pattern = """(default|debug|analog|digital|marker)""".toRegex()
-        internal fun fromMessage(message:String?):BoardMode? = when (findPattern(pattern, message)) {
-            "default" -> DEFAULT
-            "debug" -> DEBUG
-            "analog" -> ANALOG
-            "digital" -> DIGITAL
-            "marker" -> MARKER
-            else -> null
-        }
-    }
 }
 
 enum class SampleRate(val command:Command) {
@@ -111,19 +100,6 @@ enum class SampleRate(val command:Command) {
         SR_1000 -> 1000
         SR_500 -> 500
         SR_250 -> 250
-    }
-    companion object {
-        private val pattern = """Sample rate is (\d+)Hz""".toRegex()
-        internal fun fromMessage(message:String?):SampleRate? = when (findPattern(pattern, message)) {
-            "16000" -> SR_16000
-            "8000" -> SR_8000
-            "4000" -> SR_4000
-            "2000" -> SR_2000
-            "1000" -> SR_1000
-            "500" -> SR_500
-            "250" -> SR_250
-            else -> null
-        }
     }
 }
 

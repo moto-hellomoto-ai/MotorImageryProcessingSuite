@@ -4,7 +4,6 @@ import org.junit.jupiter.api.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.params.*
 import org.junit.jupiter.params.provider.*
-import java.lang.IllegalArgumentException
 import java.util.stream.Stream
 
 internal class TypeDefsTest {
@@ -25,12 +24,12 @@ internal class TypeDefsTest {
         @ParameterizedTest
         @MethodSource("validSampleRatePatterns")
         fun test_SampleRateFromMessage_success(rate:SampleRate, msg:String) {
-            val actual = SampleRate.fromMessage(msg)
+            val actual = msg.toSampleRate()
             assertEquals(rate, actual)
         }
         @Test
         fun test_SampleRateFromMessage_failure() {
-            assertNull(SampleRate.fromMessage("36Hz"))
+            assertNull("36Hz".toSampleRate())
         }
     }
 
@@ -48,12 +47,11 @@ internal class TypeDefsTest {
         @ParameterizedTest
         @MethodSource("validBoardModePatterns")
         fun test_BoardModeFromMessage_success(mode:BoardMode, msg:String) {
-            val actual = BoardMode.fromMessage(msg)
-            assertEquals(mode, actual)
+            assertEquals(mode, msg.toBoardMode())
         }
         @Test
         fun test_BoardModeFromMessage_failure() {
-            assertNull(BoardMode.fromMessage("Success: unknown$$$"))
+            assertNull("Success: unknown$$$".toBoardMode())
         }
     }
 }

@@ -1,5 +1,6 @@
-package ai.hellomoto.mip.tasks.rotation_task
+package ai.hellomoto.mip.tasks.rotation
 
+import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorGrpc
 import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorService.ProcessResult
 import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorService.RotationData
 import io.grpc.ManagedChannel
@@ -63,7 +64,7 @@ object Client {
         val client = StreamClient("localhost", 59898)
         val random = Random()
         try {
-            for (i in 0..1000) {
+            while(true) {
                 client.send(random.nextFloat())
                 Thread.sleep(33)
             }

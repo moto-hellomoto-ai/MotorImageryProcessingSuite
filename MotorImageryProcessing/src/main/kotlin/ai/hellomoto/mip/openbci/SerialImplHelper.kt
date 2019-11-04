@@ -50,14 +50,6 @@ fun interpret16bitAsInt32(ba:ByteArray, offset:Int): Int {
     }
 }
 
-data class PacketData(
-    val packetId:Int,
-    val stopByte: Byte,
-    val rawEegs:List<Int>,
-    val auxs:List<Int>,
-    var eegs:List<Float> = listOf<Float>()
-)
-
 fun parsePacket(buffer:ByteArray):PacketData {
     val packetId = 0xFF and buffer[0].toInt()
     val eegs = (0 until 8).map{interpret24bitAsInt32(buffer, 1 + 3 * it)}
