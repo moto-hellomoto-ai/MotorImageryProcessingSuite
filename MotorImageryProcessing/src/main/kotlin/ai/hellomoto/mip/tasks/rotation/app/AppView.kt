@@ -4,7 +4,7 @@ import ai.hellomoto.mip.Styles
 import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleStatusBar
 import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleTimeSeries
 import javafx.geometry.Pos
-import javafx.scene.control.Button
+import javafx.scene.control.CheckMenuItem
 import javafx.scene.control.MenuItem
 import javafx.scene.control.ToggleButton
 import javafx.scene.image.ImageView
@@ -13,24 +13,27 @@ import tornadofx.*
 
 class MenuBarView : View() {
     var quitMenu: MenuItem by singleAssign()
-    var showBCIControllerMenu: MenuItem by singleAssign()
-    var startRotationStreamReceiverButton: ToggleButton by singleAssign()
-    var configRotationStreamReceiverButton: Button by singleAssign()
+    var configMenu: MenuItem by singleAssign()
+    var startMenu: CheckMenuItem by singleAssign()
+    var showBCIPlotMenu: MenuItem by singleAssign()
 
     override val root = vbox {
         menubar {
             menu {
                 text = "Rotation Task"
+                configMenu = item("Configure")
+                startMenu = checkmenuitem("Start Streaming") {
+                    textProperty().stringBinding(selectedProperty()) {
+                        if (isSelected) "Stop Streaming" else "Start Streaming"
+                    }
+                }
                 quitMenu = item("Quit")
+                configMenu.disableProperty().bind(startMenu.selectedProperty())
             }
             menu {
                 text = "View"
-                showBCIControllerMenu = item("Hide BCI Controller")
+                showBCIPlotMenu = item("Hide BCI Controller")
             }
-        }
-        toolbar {
-            startRotationStreamReceiverButton = togglebutton("Start", selectFirst = false)
-            configRotationStreamReceiverButton = button("Configure")
         }
     }
 }

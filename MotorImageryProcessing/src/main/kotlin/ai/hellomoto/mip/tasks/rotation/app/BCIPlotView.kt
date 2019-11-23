@@ -1,5 +1,6 @@
 package ai.hellomoto.mip.tasks.rotation.app
 
+import ai.hellomoto.mip.openbci.PacketData
 import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleStatusBar
 import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleTimeSeries
 import javafx.scene.layout.VBox
@@ -11,6 +12,10 @@ import java.util.*
 class BCIPlotView : View() {
     companion object {
         val LOG: Logger = LogManager.getLogger(BCIPlotView::class.qualifiedName)
+        val COLORS = arrayOf(
+            "#486f81", "#6a8694", "#8b9ea7", "#adb6bb",
+            "#cfcfcf", "#cbacb0", "#c48a93", "#ba6776"
+        )
     }
 
     override val scope = super.scope as AppConfig
@@ -27,20 +32,31 @@ class BCIPlotView : View() {
     }
     private val plotArea = root.center as VBox
 
-    val chartList: ArrayList<SimpleTimeSeries> = arrayListOf()
+    private val chartList: ArrayList<SimpleTimeSeries> = arrayListOf()
 
     fun initCharts(numCharts: Int) {
-        plotArea.clear()
+        stopCharts()
         chartList.clear()
+        plotArea.clear()
         for (i in 1..numCharts) {
             val chart = SimpleTimeSeries(hideAxis = i != numCharts).apply {
                 root.usePrefHeight = true
                 root.prefHeightProperty().bind(plotArea.heightProperty().divide(numCharts))
+                root.style = "CHART_COLOR_1: ${COLORS[(i -1) % 8]} ;"
             }
-            plotArea.add(chart.root)
             chartList.add(chart)
+            plotArea.add(chart.root)
         }
     }
+
+    fun addData(data: PacketData) {
+        for (i in data.eegs.indices) {
+            chartList[i].add(data.date.time, data.eegs[i])
+        }
+    }
+
+    fun startCharts() = chartList.forEach{ it.start() }
+    fun stopCharts() = chartList.forEach{ it.stop() }
 
     override fun onDock() {
         super.onDock()

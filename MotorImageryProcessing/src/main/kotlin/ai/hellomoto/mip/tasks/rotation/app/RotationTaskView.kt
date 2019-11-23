@@ -25,6 +25,11 @@ class RotationTaskView : View("Rotation Task") {
     private val appView = AppView()
     override val root = appView.root
 
+    private var bciPlotView = find<BCIPlotView>(appConfig)
+    private var bciPlotWindow = bciPlotView.openWindow(
+        modality = Modality.NONE, owner = this.currentWindow, escapeClosesWindow = false
+    )
+
     private val rotationStreamReceiver = object : RotationStreamProcessor() {
         override fun onNextCallback(data: RotationStreamProcessorService.RotationData) {
             appView.rotationView.chart.add(Date().time, data.velocity)
@@ -42,28 +47,42 @@ class RotationTaskView : View("Rotation Task") {
     }
 
     var cyton: ICyton? = null;
-    private var bciPlot = find<BCIPlotView>(appConfig)
-    private var bciPlotWindow = bciPlot.openWindow(
-        modality = Modality.NONE, owner = this.currentWindow, escapeClosesWindow = false
-    )
 
     init {
-        appView.menuBar.startRotationStreamReceiverButton.apply {
-            action {
-                if (this.isSelected) {
-                    startRotationStreamReceiver()
-                    bciPlot.initCharts(appConfig.bciNumChannels)
-                    initBCI()
-                    startBCIStream()
-                    this.text = "Stop"
+        appView.menuBar.startMenu.apply {
+            selectedProperty().addListener {_, _, selected ->
+                if (selected) {
+                    text = "Stop Streaming"
+                    action {
+                        startRotationStreamReceiver()
+                        initBCI()
+                        startBCIStream()
+                    }
                 } else {
-                    stopRotationStreamReceiver()
-                    stopBCIStream()
-                    this.text = "Start"
+                    text = "Start Streaming"
+                    action {
+                        stopRotationStreamReceiver()
+                        stopBCIStream()
+                    }
                 }
             }
         }
-        appView.menuBar.configRotationStreamReceiverButton.apply {
+        appView.menuBar.showBCIPlotMenu.apply {
+            text = "Hide BCI Plot"
+            action { bciPlotWindow?.close() }
+        }
+        bciPlotWindow?.apply {
+            showingProperty().addListener { _, _, isShowing ->
+                if (isShowing) {
+                    appView.menuBar.showBCIPlotMenu.text = "Hide BCI Plot"
+                    appView.menuBar.showBCIPlotMenu.action { this.close() }
+                } else {
+                    appView.menuBar.showBCIPlotMenu.text = "Show BCI Plot"
+                    appView.menuBar.showBCIPlotMenu.action { this.show(); this.requestFocus() }
+                }
+            }
+        }
+        appView.menuBar.configMenu.apply {
             action {
                 val appConfigView = find<AppConfigView>(appConfig)
                 appConfigView.resetFields()
@@ -71,43 +90,43 @@ class RotationTaskView : View("Rotation Task") {
             }
         }
         appView.menuBar.quitMenu.apply { action { close() } }
-        appView.menuBar.showBCIControllerMenu.apply {
-            action {
-                if (bciPlotWindow?.isShowing == true) {
-                    bciPlotWindow?.close()
-                    this.text = "Show BCI Controller"
-                } else {
-                    bciPlotWindow?.show()
-                    bciPlotWindow?.requestFocus()
-                    this.text = "Hide BCI Controller"
-                }
-            }
-        }
     }
 
     override fun onDock() {
         super.onDock()
-        bciPlotWindow?.show()
         this.currentWindow?.let { appConfig.restoreWindowPosition("rotation_task", it) }
+        bciPlotWindow?.show()
+    }
+
+    override fun onUndock() {
+        super.onUndock()
+        this.currentWindow?.let { appConfig.storeWindowPosition("rotation_task", it) }
+        this.appView.menuBar.startMenu.isSelected = false
+        stopRotationStreamReceiver()
+        stopBCIStream()
+        bciPlotView.close()
+        find<MainView>().openWindow()
     }
 
     private fun startRotationStreamReceiver() {
         rotationStreamReceiver.start(appConfig.grpcHost, appConfig.grpcPort)
         appView.statusBar.started()
+        appView.rotationView.chart.start()
     }
 
     private fun stopRotationStreamReceiver() {
-        rotationStreamReceiver.stop()
+        appView.rotationView.chart.stop()
         appView.statusBar.inactive()
+        rotationStreamReceiver.stop()
     }
 
     private fun initBCI() {
         LOG.info("Initializing BCI from {}", appConfig.bciSerialPort)
-        if (appConfig.bciSerialPort == AppConfig.CYTON_MOCK_PORT) {
-            cyton = CytonMock()
-            return
-        }
-        cyton = Cyton(appConfig.bciSerialPort).let {
+        bciPlotView.initCharts(appConfig.bciNumChannels)
+        cyton = (
+                if (appConfig.bciSerialPort == AppConfig.CYTON_MOCK_PORT) CytonMock()
+                else Cyton(appConfig.bciSerialPort)
+                ).let {
             when (val result = it.initBoard()) {
                 is OperationResult.Success -> {
                     if (appConfig.bciNumChannels == 16) {
@@ -121,35 +140,24 @@ class RotationTaskView : View("Rotation Task") {
     }
 
     private fun startBCIStream() {
+        bciPlotView.startCharts()
         cyton?.let {
             LOG.info("{}", cyton)
             it.startStreaming { result ->
-                bciPlot.statusBar.active()
+                bciPlotView.statusBar.active()
                 when (result) {
-                    is ReadPacketResult.Success -> {
-                        val now = Date().time
-                        for (i in 0..7) {
-                            bciPlot.chartList[i].add(now, result.data.eegs[i])
-                        }
-                    }
-                    is ReadPacketResult.Fail -> bciPlot.statusBar.error()
+                    is ReadPacketResult.Success -> bciPlotView.addData(result.data)
+                    is ReadPacketResult.Fail -> bciPlotView.statusBar.error()
                 }
             }
-            bciPlot.statusBar.started()
+            bciPlotView.statusBar.started()
         }
     }
 
     private fun stopBCIStream() {
+        bciPlotView.stopCharts()
         cyton?.stopStreaming()
         cyton?.close()
         cyton = null
-    }
-
-    override fun onUndock() {
-        super.onUndock()
-        this.currentWindow?.let { appConfig.storeWindowPosition("rotation_task", it) }
-        stopRotationStreamReceiver()
-        bciPlot.close()
-        find<MainView>().openWindow()
     }
 }

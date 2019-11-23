@@ -3,8 +3,26 @@ package ai.hellomoto.mip.openbci
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.*
+import java.util.function.Function
+import java.util.stream.Collectors
+import java.util.stream.Stream
 import kotlin.concurrent.scheduleAtFixedRate
 
+
+fun <T> concatenate(vararg lists: List<T>): List<T> {
+    return Stream.of(*lists).flatMap {x -> x.stream()}.collect(Collectors.toList())
+}
+
+fun PacketData.merge(other: PacketData): PacketData {
+    return PacketData(
+        packetId = this.packetId,
+        date = this.date,
+        stopByte = other.stopByte,
+        rawEegs = concatenate(this.rawEegs, other.rawEegs),
+        auxs = concatenate(this.auxs, other.auxs),
+        eegs = concatenate(this.eegs, other.eegs)
+    )
+}
 
 class Cyton(private val serial:ISerial) : ICyton {
     companion object {
@@ -167,7 +185,6 @@ class Cyton(private val serial:ISerial) : ICyton {
             val period:Long = 1000 / rate
             streamingTimer = Timer(true)
             streamingTimerTask = streamingTimer?.scheduleAtFixedRate(0, period) {
-                waitForStartByte()
                 callback(readPacket());
             }
             startStreaming()
@@ -185,10 +202,16 @@ class Cyton(private val serial:ISerial) : ICyton {
             isStreaming = false
         }
     }
+
     private fun waitForStartByte() {
         serial.waitByte(START_BYTE)
     }
     override fun readPacket():ReadPacketResult {
+        return if (isDaisyAttached) readOnePacket() else readTwoPackets()
+    }
+
+    private fun readOnePacket(): ReadPacketResult {
+        waitForStartByte()
         val packet = serial.readPacket()
         if (packet.stopByte == STOP_BYTE) {
             packet.eegs = packet.rawEegs.map{parseEeg(it)}
@@ -196,6 +219,18 @@ class Cyton(private val serial:ISerial) : ICyton {
         }
         return ReadPacketResult.Fail(
             "Invalid Stop Byte. Packet ID: ${packet.packetId}, Stop Byte: ${packet.stopByte}.")
+    }
+
+    private fun readTwoPackets(): ReadPacketResult {
+        return when (val res1 = readOnePacket()) {
+            is ReadPacketResult.Fail -> res1
+            is ReadPacketResult.Success ->
+                when (val res2 = readOnePacket()) {
+                    is ReadPacketResult.Fail -> res2
+                    is ReadPacketResult.Success ->
+                        ReadPacketResult.Success(res1.data.merge(res2.data))
+            }
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////

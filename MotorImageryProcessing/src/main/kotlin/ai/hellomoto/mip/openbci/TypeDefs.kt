@@ -1,9 +1,12 @@
 package ai.hellomoto.mip.openbci
 
+import java.util.*
+
 private fun b(command:String):ByteArray = command.toByteArray()
 
 data class PacketData(
     val packetId:Int,
+    val date: Date,
     val stopByte: Byte,
     val rawEegs:List<Int>,
     val auxs:List<Int>,

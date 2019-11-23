@@ -4,6 +4,7 @@ import com.fazecast.jSerialComm.SerialPort
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.nio.charset.Charset
+import java.util.*
 
 class SerialImpl(port:String, baudRate:Int) : ISerial {
     companion object {
@@ -63,7 +64,7 @@ class SerialImpl(port:String, baudRate:Int) : ISerial {
             numRead -= serial.readBytes(buffer, numRead, 32-numRead)
             Thread.sleep(1)
         } while (numRead > 0)
-        return parsePacket(buffer)
+        return parsePacket(buffer, Date())
     }
 
     override fun close() {

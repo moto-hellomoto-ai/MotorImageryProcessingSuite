@@ -12,6 +12,9 @@ class Styles : Stylesheet() {
     }
 
     init {
+        chartSeriesLine {
+            strokeWidth = 1.8.px
+        }
         if (DEBUG) {
             debug1 {
                 borderColor += box(Color.RED)

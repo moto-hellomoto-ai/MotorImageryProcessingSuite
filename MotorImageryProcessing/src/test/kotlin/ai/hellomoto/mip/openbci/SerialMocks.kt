@@ -19,7 +19,7 @@ class SerialMocks{
         override fun waitByte(value: Byte) {
             throw RuntimeException("Test Serial Mock is used without initialization.")
         }
-        override fun readPacket(): PacketData {
+        override fun readOnePacket(): PacketData {
             throw RuntimeException("Test Serial Mock is used without initialization.")
         }
         override fun close() {
@@ -34,7 +34,7 @@ class SerialMocks{
         ISerial,
         SerialMock
     {
-        override fun readPacket(): PacketData {
+        override fun readOnePacket(): PacketData {
             throw RuntimeException("SimpleResponsive Mock is not intended for stream testing.")
         }
         override fun waitByte(value: Byte) {

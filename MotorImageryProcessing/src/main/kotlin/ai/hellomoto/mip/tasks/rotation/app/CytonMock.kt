@@ -69,7 +69,7 @@ class CytonMock: ICyton {
             return false;
         }
         val period: Long = 1000 / sampleRate.toLong()
-        streamingTimerTask = streamingTimer.scheduleAtFixedRate(3000, period) {
+        streamingTimerTask = streamingTimer.scheduleAtFixedRate(1000, period) {
             callback(readPacket())
         }
         return true
@@ -88,10 +88,11 @@ class CytonMock: ICyton {
         val rawEegs = List(numChannels) { (0..255).random() }
         val eegs = rawEegs.map { parseEeg(it) }
         val auxs: List<Int> = listOf()
-        return ReadPacketResult.Success(PacketData(packetId, stopByte, rawEegs, auxs, eegs));
+        return ReadPacketResult.Success(PacketData(packetId, Date(), stopByte, rawEegs, auxs, eegs));
     }
 
     override fun attachDaisy(): OperationResult {
+        LOG.info("Attaching Daisy")
         numChannels = 16
         return OperationResult.Success("Successfully attached Daisy. ${this}");
     }
