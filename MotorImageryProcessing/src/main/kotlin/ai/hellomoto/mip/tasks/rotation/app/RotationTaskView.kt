@@ -32,7 +32,7 @@ class RotationTaskView : View("Rotation Task") {
 
     private val rotationStreamReceiver = object : RotationStreamProcessor() {
         override fun onNextCallback(data: RotationStreamProcessorService.RotationData) {
-            appView.rotationView.chart.add(Date().time, data.velocity)
+            appView.rotationView.chart.add(data.timestamp, data.velocity)
             appView.rotationView.image.rotate += data.velocity
             appView.statusBar.active()
         }

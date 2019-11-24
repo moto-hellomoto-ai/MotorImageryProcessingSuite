@@ -35,12 +35,12 @@ class Streamer(
     private val requestObserver = asyncStub.stream(responseObserver)
 
     @Throws(InterruptedException::class)
-    fun send(value:Float) {
+    fun send(timestamp: Long, value:Float) {
         if (finishLatch.count == 0L) {
             return
         }
         try {
-            val data = RotationData.newBuilder().setVelocity(value).build()
+            val data = RotationData.newBuilder().setVelocity(value).setTimestamp(timestamp).build()
             requestObserver.onNext(data)
         } catch (e: RuntimeException) {
             requestObserver.onError(e)

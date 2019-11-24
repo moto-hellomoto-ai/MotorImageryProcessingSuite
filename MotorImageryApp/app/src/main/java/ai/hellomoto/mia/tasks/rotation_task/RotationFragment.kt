@@ -121,7 +121,7 @@ class RotationFragment : Fragment() {
         }
         if (mStream) {
             try {
-                mClient?.send(mVelocity)
+                mClient?.send(System.currentTimeMillis(), mVelocity)
             } catch (e: Exception) {
                 Log.e("MIA", "exception", e)
                 mStream = false
@@ -154,7 +154,7 @@ class RotationFragment : Fragment() {
                 }
             }
         }
-        mUIUpdater = Scheduler({ updateUI() }, 33)
+        mUIUpdater = Scheduler(33) { updateUI() }
     }
 
     private fun stopUIUpdater() {

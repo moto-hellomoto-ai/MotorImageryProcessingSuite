@@ -41,8 +41,9 @@ class StreamClient(host: String, port: Int) {
         if (finishLatch.count == 0L) {
             return
         }
+        val now = System.currentTimeMillis()
         try {
-            val data = RotationData.newBuilder().setVelocity(value).build()
+            val data = RotationData.newBuilder().setVelocity(value).setTimestamp(now).build()
             requestObserver.onNext(data)
         } catch (e: RuntimeException) {
             requestObserver.onError(e)

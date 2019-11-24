@@ -5,7 +5,7 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
 
-class Scheduler(runnable: () -> Unit, cycle: Long) {
+class Scheduler(cycle: Long, runnable: () -> Unit) {
     private var mService: ScheduledExecutorService = Executors.newSingleThreadScheduledExecutor()
     private var mFuture: ScheduledFuture<*>
 
