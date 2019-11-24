@@ -1,81 +1,176 @@
 package ai.hellomoto.mip.tasks.rotation.app
 
-import ai.hellomoto.mip.Styles
-import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleStatusBar
-import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleTimeSeries
-import javafx.geometry.Pos
-import javafx.scene.control.CheckMenuItem
-import javafx.scene.control.MenuItem
-import javafx.scene.control.ToggleButton
-import javafx.scene.image.ImageView
-import javafx.scene.layout.Priority
+import ai.hellomoto.mip.MainView
+import ai.hellomoto.mip.openbci.Cyton
+import ai.hellomoto.mip.openbci.ICyton
+import ai.hellomoto.mip.openbci.OperationResult
+import ai.hellomoto.mip.openbci.ReadPacketResult
+import ai.hellomoto.mip.tasks.rotation.app.processors.RotationStreamProcessor
+import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorService
+import javafx.stage.Modality
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
 import tornadofx.*
+import java.nio.file.Path
 
-class MenuBarView : View() {
-    var quitMenu: MenuItem by singleAssign()
-    var configMenu: MenuItem by singleAssign()
-    var startMenu: CheckMenuItem by singleAssign()
-    var showBCIPlotMenu: MenuItem by singleAssign()
 
-    override val root = vbox {
-        menubar {
-            menu {
-                text = "Rotation Task"
-                configMenu = item("Configure")
-                startMenu = checkmenuitem("Start Streaming") {
-                    textProperty().stringBinding(selectedProperty()) {
-                        if (isSelected) "Stop Streaming" else "Start Streaming"
+private class BciStreamProcessor(
+    private val appConfig: AppConfig, private val bciPlotView: BCIPlotView
+) {
+    companion object {
+        val LOG: Logger = LogManager.getLogger(BciStreamProcessor::class.qualifiedName)
+    }
+
+    private var cyton: ICyton? = null
+
+    fun init() {
+        LOG.info("Initializing BCI from {}", appConfig.bciSerialPort)
+        bciPlotView.initCharts(appConfig.bciNumChannels)
+        cyton = (
+                if (appConfig.bciSerialPort == AppConfig.CYTON_MOCK_PORT) CytonMock()
+                else Cyton(appConfig.bciSerialPort)
+                ).let {
+            when (val result = it.initBoard()) {
+                is OperationResult.Success -> {
+                    if (appConfig.bciNumChannels == 16) {
+                        it.attachDaisy()
+                    }
+                    it
+                }
+                else -> null
+            }
+        }
+    }
+
+    fun start() {
+        LOG.info("Starting BCI stream")
+        bciPlotView.startCharts()
+        cyton?.let {
+            LOG.info("{}", cyton)
+            it.startStreaming { result ->
+                bciPlotView.statusBar.active()
+                when (result) {
+                    is ReadPacketResult.Success -> bciPlotView.addData(result.data)
+                    is ReadPacketResult.Fail -> bciPlotView.statusBar.error()
+                }
+            }
+            bciPlotView.statusBar.started()
+        }
+    }
+
+    fun stop() {
+        LOG.info("Stopping BCI stream")
+        bciPlotView.stopCharts()
+        cyton?.stopStreaming()
+        cyton?.close()
+        cyton = null
+    }
+}
+
+class RotationStreamReceiver(private val rotationView: RotationView) : RotationStreamProcessor() {
+    override fun onNextCallback(data: RotationStreamProcessorService.RotationData) {
+        rotationView.chart.add(data.timestamp, data.velocity)
+        rotationView.image.rotate += data.velocity
+        rotationView.statusBar.active()
+    }
+
+    override fun onErrorCallback(t: Throwable) {
+        rotationView.statusBar.error()
+    }
+
+    override fun onCompleteCallback() {
+        rotationView.statusBar.completed()
+    }
+
+    override fun start(host: String, port: Int) {
+        super.start(host, port)
+        rotationView.chart.start()
+        rotationView.statusBar.started()
+    }
+
+    override fun stop() {
+        super.stop()
+        rotationView.chart.stop()
+        rotationView.statusBar.inactive()
+    }
+}
+
+class AppView : View("Rotation Task") {
+    companion object {
+        val LOG: Logger = LogManager.getLogger(AppView::class.qualifiedName)
+    }
+
+    override val configPath: Path = app.configBasePath.resolve("RotationTaskConfig.properties")
+    private val appConfig = AppConfig(this.config)
+
+    private val appView = RotationView()
+    override val root = appView.root
+
+    private var bciPlotView = find<BCIPlotView>(appConfig)
+    private var bciPlotWindow = bciPlotView.openWindow(
+        modality = Modality.NONE, owner = this.currentWindow, escapeClosesWindow = false
+    )
+
+    private val rotationStreamReceiver = RotationStreamReceiver(appView)
+    private val bciStreamProcessor = BciStreamProcessor(appConfig, bciPlotView)
+
+    init {
+        appView.menuBar.startMenu.apply {
+            selectedProperty().addListener {_, _, selected ->
+                if (selected) {
+                    text = "Stop Streaming"
+                    action {
+                        rotationStreamReceiver.start(appConfig.grpcHost, appConfig.grpcPort)
+                        bciStreamProcessor.init()
+                        bciStreamProcessor.start()
+                    }
+                } else {
+                    text = "Start Streaming"
+                    action {
+                        rotationStreamReceiver.stop()
+                        bciStreamProcessor.stop()
                     }
                 }
-                quitMenu = item("Quit")
-                configMenu.disableProperty().bind(startMenu.selectedProperty())
-            }
-            menu {
-                text = "View"
-                showBCIPlotMenu = item("Hide BCI Controller")
             }
         }
+        appView.menuBar.showBCIPlotMenu.apply {
+            text = "Hide BCI Plot"
+            action { bciPlotWindow?.close() }
+        }
+        bciPlotWindow?.apply {
+            showingProperty().addListener { _, _, isShowing ->
+                if (isShowing) {
+                    appView.menuBar.showBCIPlotMenu.text = "Hide BCI Plot"
+                    appView.menuBar.showBCIPlotMenu.action { this.close() }
+                } else {
+                    appView.menuBar.showBCIPlotMenu.text = "Show BCI Plot"
+                    appView.menuBar.showBCIPlotMenu.action { this.show(); this.requestFocus() }
+                }
+            }
+        }
+        appView.menuBar.configMenu.apply {
+            action {
+                val appConfigView = find<AppConfigView>(appConfig)
+                appConfigView.resetFields()
+                appConfigView.openModal()
+            }
+        }
+        appView.menuBar.quitMenu.apply { action { close() } }
     }
-}
 
-class RotationView : View() {
-    var image: ImageView by singleAssign()
-    val chart = SimpleTimeSeries(hideAxis = false)
-
-    override val root = vbox {
-        image = imageview("rotation_task/ic_launcher_round.png") {
-            // Normally, VBox automatically resize the children, but ImageView break this.
-            // So we manually set the image height to occupy the half of the remaining height of window height
-            isPreserveRatio = true
-            fitHeightProperty().bind(this@vbox.heightProperty().divide(2.0))
-            vboxConstraints {
-                alignment = Pos.CENTER
-            }
-        }
-        chart.root.apply {
-            isLegendVisible = false
-            vboxConstraints {
-                vgrow = Priority.ALWAYS
-                alignment = Pos.CENTER
-            }
-            this@vbox.children.add(this)
-        }
-        addClass(Styles.debug1)
-        children.addClass(Styles.debug2)
+    override fun onDock() {
+        super.onDock()
+        this.currentWindow?.let { appConfig.restoreWindowPosition("rotation_task", it) }
+        bciPlotWindow?.show()
     }
-}
 
-class AppView : View() {
-    val menuBar: MenuBarView by inject()
-    val rotationView: RotationView by inject()
-    val statusBar = SimpleStatusBar()
-
-    override val root = borderpane {
-        center = rotationView.root.apply {
-            // prevents center content from hiding bottom content
-            minHeight = 0.0
-        }
-        top = menuBar.root
-        bottom = statusBar.root
+    override fun onUndock() {
+        super.onUndock()
+        this.currentWindow?.let { appConfig.storeWindowPosition("rotation_task", it) }
+        this.appView.menuBar.startMenu.isSelected = false
+        rotationStreamReceiver.stop()
+        bciStreamProcessor.stop()
+        bciPlotView.close()
+        find<MainView>().openWindow()
     }
 }

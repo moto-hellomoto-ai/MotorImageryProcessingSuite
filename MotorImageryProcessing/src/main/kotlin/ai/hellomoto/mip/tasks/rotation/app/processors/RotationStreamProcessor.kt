@@ -56,13 +56,13 @@ abstract class RotationStreamProcessor {
 
     private var server: Server? = null
 
-    fun start(host: String, port: Int) {
+    open fun start(host: String, port: Int) {
         LOG.info("Starting Rotation Stream Receiver {}:{}", host, port)
         server = getServer(host, port);
         server?.start()
     }
 
-    fun stop() {
+    open fun stop() {
         server?.let {
             if (!it.isShutdown) {
                 LOG.info("Stopping Rotation Stream Receiver")

@@ -50,6 +50,7 @@ class BCIPlotView : View() {
     }
 
     fun addData(data: PacketData) {
+        LOG.debug(data.eegs.size)
         for (i in data.eegs.indices) {
             chartList[i].add(data.date.time, data.eegs[i])
         }

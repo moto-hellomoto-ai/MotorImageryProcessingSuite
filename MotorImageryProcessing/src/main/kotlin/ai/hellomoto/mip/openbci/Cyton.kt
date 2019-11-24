@@ -3,11 +3,9 @@ package ai.hellomoto.mip.openbci
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import java.util.*
-import java.util.function.Function
 import java.util.stream.Collectors
 import java.util.stream.Stream
 import kotlin.concurrent.scheduleAtFixedRate
-
 
 fun <T> concatenate(vararg lists: List<T>): List<T> {
     return Stream.of(*lists).flatMap {x -> x.stream()}.collect(Collectors.toList())
@@ -207,7 +205,7 @@ class Cyton(private val serial:ISerial) : ICyton {
         serial.waitByte(START_BYTE)
     }
     override fun readPacket():ReadPacketResult {
-        return if (isDaisyAttached) readOnePacket() else readTwoPackets()
+        return if (isDaisyAttached) readTwoPackets() else readOnePacket()
     }
 
     private fun readOnePacket(): ReadPacketResult {

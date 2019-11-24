@@ -1,6 +1,6 @@
 package ai.hellomoto.mip
 
-import ai.hellomoto.mip.tasks.rotation.app.RotationTaskView
+import ai.hellomoto.mip.tasks.rotation.app.AppView
 import tornadofx.*
 
 class MainView : View() {
@@ -12,7 +12,7 @@ class MainView : View() {
                 item("Rotation") {
                     action {
                         close()
-                        find<RotationTaskView>().openWindow(
+                        find<AppView>().openWindow(
                             block = true, escapeClosesWindow = false)
                     }
                 }
