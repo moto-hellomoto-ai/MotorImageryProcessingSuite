@@ -55,3 +55,5 @@ libraries/tools/kotlin-test-nodejs-runner/lib/
 local.properties
 
 src/generated
+
+*.bin

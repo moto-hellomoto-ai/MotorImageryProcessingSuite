@@ -88,7 +88,7 @@ class CytonMock: ICyton {
         val rawEegs = List(numChannels) { (0..255).random() }
         val eegs = rawEegs.map { parseEeg(it) }
         val auxs: List<Int> = listOf()
-        return ReadPacketResult.Success(PacketData(packetId, Date(), stopByte, rawEegs, auxs, eegs));
+        return ReadPacketResult.Success(PacketData(Date().time, packetId, stopByte, rawEegs, auxs, eegs));
     }
 
     override fun attachDaisy(): OperationResult {

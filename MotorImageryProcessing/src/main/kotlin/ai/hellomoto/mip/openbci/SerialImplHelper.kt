@@ -51,10 +51,10 @@ fun interpret16bitAsInt32(ba:ByteArray, offset:Int): Int {
     }
 }
 
-fun parsePacket(buffer:ByteArray, date: Date):PacketData {
+fun parsePacket(buffer:ByteArray, date: Long):PacketData {
     val packetId = 0xFF and buffer[0].toInt()
     val eegs = (0 until 8).map{interpret24bitAsInt32(buffer, 1 + 3 * it)}
     val auxs = (0 until 3).map{interpret16bitAsInt32(buffer, 25 + 2 * it)}
     val stopByte = buffer[31]
-    return PacketData(packetId, date, stopByte, eegs, auxs)
+    return PacketData(date, packetId, stopByte, eegs, auxs)
 }

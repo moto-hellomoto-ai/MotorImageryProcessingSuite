@@ -5,8 +5,8 @@ import io.grpc.ManagedChannelBuilder
 import io.grpc.stub.StreamObserver
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorGrpc.*
-import ai.hellomoto.mip.tasks.rotation_task.RotationStreamProcessorService.*
+import ai.hellomoto.mip.tasks.rotation.RotationStreamProcessorGrpc.*
+import ai.hellomoto.mip.tasks.rotation.RotationStreamProcessorService.*
 
 
 class Streamer(

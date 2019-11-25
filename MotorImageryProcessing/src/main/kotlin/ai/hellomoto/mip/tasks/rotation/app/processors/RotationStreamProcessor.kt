@@ -49,20 +49,20 @@ class RotationStreamProcessorGrpcImpl(
     }
 }
 
-abstract class RotationStreamProcessor {
+class RotationStreamProcessor(private val dataProcessor: DataProcessor) {
     companion object {
         val LOG: Logger = LogManager.getLogger(RotationStreamProcessor::class.qualifiedName)
     }
 
     private var server: Server? = null
 
-    open fun start(host: String, port: Int) {
+    fun start(host: String, port: Int) {
         LOG.info("Starting Rotation Stream Receiver {}:{}", host, port)
         server = getServer(host, port);
         server?.start()
     }
 
-    open fun stop() {
+    fun stop() {
         server?.let {
             if (!it.isShutdown) {
                 LOG.info("Stopping Rotation Stream Receiver")
@@ -84,9 +84,11 @@ abstract class RotationStreamProcessor {
         ).build()
     }
 
-    abstract fun onNextCallback(data: RotationData)
+    fun onNextCallback(data: RotationData) {
+        dataProcessor.addRotationData(data)
+    }
 
-    abstract fun onErrorCallback(t: Throwable)
+    fun onErrorCallback(t: Throwable) {}
 
-    abstract fun onCompleteCallback()
+    fun onCompleteCallback() {}
 }

@@ -1,12 +1,13 @@
 package ai.hellomoto.mip.openbci
 
-import java.util.*
+import kotlinx.serialization.Serializable
 
 private fun b(command:String):ByteArray = command.toByteArray()
 
+@Serializable
 data class PacketData(
+    val timestamp: Long,
     val packetId:Int,
-    val date: Date,
     val stopByte: Byte,
     val rawEegs:List<Int>,
     val auxs:List<Int>,

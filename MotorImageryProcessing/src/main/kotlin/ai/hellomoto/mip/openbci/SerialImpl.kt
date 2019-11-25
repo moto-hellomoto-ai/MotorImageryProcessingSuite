@@ -64,7 +64,7 @@ class SerialImpl(port:String, baudRate:Int) : ISerial {
             numRead -= serial.readBytes(buffer, numRead, 32-numRead)
             Thread.sleep(1)
         } while (numRead > 0)
-        return parsePacket(buffer, Date())
+        return parsePacket(buffer, Date().time)
     }
 
     override fun close() {

@@ -14,7 +14,7 @@ fun <T> concatenate(vararg lists: List<T>): List<T> {
 fun PacketData.merge(other: PacketData): PacketData {
     return PacketData(
         packetId = this.packetId,
-        date = this.date,
+        timestamp = this.timestamp,
         stopByte = other.stopByte,
         rawEegs = concatenate(this.rawEegs, other.rawEegs),
         auxs = concatenate(this.auxs, other.auxs),

@@ -1,7 +1,6 @@
 package ai.hellomoto.mip.tasks.rotation.app
 
 import ai.hellomoto.mip.openbci.PacketData
-import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleStatusBar
 import ai.hellomoto.mip.tasks.rotation.app.fragments.SimpleTimeSeries
 import javafx.scene.layout.VBox
 import org.apache.logging.log4j.LogManager
@@ -21,21 +20,20 @@ class BCIPlotView : View() {
     override val scope = super.scope as AppConfig
     override val config = scope.config
 
-    val statusBar = SimpleStatusBar()
     override val root = borderpane {
-        center = vbox {
-            prefHeight = 640.0
-            prefWidth = 480.0
-            minHeight = 0.0  // Prevent center from hiding bottom when window is small
+        center {
+            vbox {
+                prefHeight = 640.0
+                prefWidth = 480.0
+                minHeight = 0.0  // Prevent center from hiding bottom when window is small
+            }
         }
-        bottom = statusBar.root
     }
     private val plotArea = root.center as VBox
 
     private val chartList: ArrayList<SimpleTimeSeries> = arrayListOf()
 
     fun initCharts(numCharts: Int) {
-        stopCharts()
         chartList.clear()
         plotArea.clear()
         for (i in 1..numCharts) {
@@ -50,14 +48,12 @@ class BCIPlotView : View() {
     }
 
     fun addData(data: PacketData) {
-        LOG.debug(data.eegs.size)
         for (i in data.eegs.indices) {
-            chartList[i].add(data.date.time, data.eegs[i])
+            chartList[i].add(data.timestamp, data.eegs[i])
         }
     }
 
-    fun startCharts() = chartList.forEach{ it.start() }
-    fun stopCharts() = chartList.forEach{ it.stop() }
+    fun updateTimeRange() { chartList.forEach { it.updateTimeRange() } }
 
     override fun onDock() {
         super.onDock()

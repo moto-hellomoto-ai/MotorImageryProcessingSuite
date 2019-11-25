@@ -5,7 +5,31 @@ import javafx.beans.property.SimpleStringProperty
 import javafx.stage.Window
 import tornadofx.*
 
-class AppConfig(val config: ConfigProperties): Scope() {
+class GrpcConfig(host: String = "0.0.0.0", port: Int = 59898) {
+    val hostProperty = SimpleStringProperty(this, "host", host)
+    var host: String by hostProperty
+
+    val portProperty = SimpleIntegerProperty(this, "port", port)
+    var port: Int by portProperty
+}
+
+class BCIConfig(serialPort: String, sampleRate: Int = 250, numChannels: Int = 8) {
+    val serialPortProperty = SimpleStringProperty(this, "port", serialPort)
+    var serialPort: String by serialPortProperty
+
+    val sampleRateProperty = SimpleIntegerProperty(this, "sampleRate", sampleRate)
+    var sampleRate: Int by sampleRateProperty
+
+    val numChannelsProperty = SimpleIntegerProperty(this, "numChannels", numChannels)
+    var numChannels: Int by numChannelsProperty
+}
+
+class IOConfig(saveDir: String="") {
+    val saveDirProperty = SimpleStringProperty(saveDir)
+    var saveDir: String by saveDirProperty
+}
+
+class AppConfig(val config: ConfigProperties) : Scope() {
     companion object {
         const val CYTON_MOCK_PORT = "MOCK"
         // Keys for storing config
@@ -14,37 +38,37 @@ class AppConfig(val config: ConfigProperties): Scope() {
         private const val BCI_PORT = "bci.serial_port"
         private const val BCI_SAMPLE_RATE = "bci.sample_rate"
         private const val BCI_NUM_CHANNELS = "bci.num_channels"
+        private const val SAVE_DIR = "save_dir"
     }
 
-    private val hostProperty = SimpleStringProperty(config.string(GRPC_HOST, "0.0.0.0"))
-    var grpcHost: String by hostProperty
+    val grpcConfig = GrpcConfig(
+        host = config.string(GRPC_HOST, "0.0.0.0"),
+        port = config.int(GRPC_PORT, 59898)
+    )
 
-    private val portProperty = SimpleIntegerProperty(config.int(GRPC_PORT, 59898))
-    var grpcPort: Int by portProperty
+    val bciConfig = BCIConfig(
+        serialPort = config.string(BCI_PORT, ""),
+        sampleRate = config.int(BCI_SAMPLE_RATE, 250),
+        numChannels = config.int(BCI_NUM_CHANNELS, 8)
+    )
 
-    private val serialPortProperty = SimpleStringProperty(config.string(BCI_PORT, ""))
-    var bciSerialPort: String by serialPortProperty
-
-    private val sampleRateProperty = SimpleIntegerProperty(config.int(BCI_SAMPLE_RATE, 250))
-    var bciSampleRate: Int by sampleRateProperty
-
-    private val numChannelsProperty = SimpleIntegerProperty(config.int(BCI_NUM_CHANNELS, 8))
-    var bciNumChannels: Int by numChannelsProperty
+    val ioConfig = IOConfig(
+        saveDir = config.string(SAVE_DIR, System.getProperty("user.home"))
+    )
 
     fun save() {
         with(config) {
-            set(GRPC_HOST to grpcHost)
-            set(GRPC_PORT to grpcPort)
-            if (bciSerialPort != CYTON_MOCK_PORT) {
-                set(BCI_PORT to bciSerialPort)
-            }
-            set(BCI_SAMPLE_RATE to bciSampleRate)
-            set(BCI_NUM_CHANNELS to bciNumChannels)
+            set(GRPC_HOST to grpcConfig.host)
+            set(GRPC_PORT to grpcConfig.port)
+            set(BCI_PORT to bciConfig.serialPort)
+            set(BCI_SAMPLE_RATE to bciConfig.sampleRate)
+            set(BCI_NUM_CHANNELS to bciConfig.numChannels)
+            set(SAVE_DIR to ioConfig.saveDir)
             save()
         }
     }
 
-    fun storeWindowPosition(name: String, window : Window) {
+    fun storeWindowPosition(name: String, window: Window) {
         with(config) {
             set("${name}.window.x" to window.x)
             set("${name}.window.y" to window.y)
@@ -54,7 +78,7 @@ class AppConfig(val config: ConfigProperties): Scope() {
         }
     }
 
-    fun restoreWindowPosition(name: String, window : Window) {
+    fun restoreWindowPosition(name: String, window: Window) {
         config.double("${name}.window.x")?.let { window.x = it }
         config.double("${name}.window.y")?.let { window.y = it }
         config.double("${name}.window.w")?.let { window.width = it }
